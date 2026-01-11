@@ -102,7 +102,7 @@ export default function Home() {
             <h3 data-component="title">npm</h3>
             <button data-copy data-slot="button">
               <span>
-                npm install -g <strong>opencode-ai</strong>
+                npm install -g <strong>@joyi-ai/openagent</strong>
               </span>
               <CopyStatus />
             </button>
@@ -111,7 +111,7 @@ export default function Home() {
             <h3 data-component="title">bun</h3>
             <button data-copy data-slot="button">
               <span>
-                bun install -g <strong>opencode-ai</strong>
+                bun install -g <strong>@joyi-ai/openagent</strong>
               </span>
               <CopyStatus />
             </button>
@@ -141,7 +141,7 @@ export default function Home() {
             <a href="https://x.com/opencode">X.com</a>
           </div>
           <div data-slot="cell">
-            <a href="https://github.com/joyi-ai/opencode-pro">GitHub</a>
+            <a href="https://github.com/joyi-ai/openagent">GitHub</a>
           </div>
           <div data-slot="cell">
             <a href="https://opencode.ai/discord">Discord</a>

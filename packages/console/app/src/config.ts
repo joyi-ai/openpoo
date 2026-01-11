@@ -7,7 +7,7 @@ export const config = {
 
   // GitHub
   github: {
-    repoUrl: "https://github.com/joyi-ai/opencode-pro",
+    repoUrl: "https://github.com/joyi-ai/openagent",
     starsFormatted: {
       compact: "50K",
       full: "50,000",
