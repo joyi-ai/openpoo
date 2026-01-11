@@ -88,7 +88,10 @@ export const SettingsDialog: Component = () => {
   const activeMode = createMemo(() => modes().find((mode) => mode.id === activeModeId()))
   const deviceOptions = createMemo(() => {
     const devices = voice.state.availableDevices()
-    return [{ id: "default", label: "System Default" }, ...devices.map((device) => ({ id: device.id, label: device.label }))]
+    return [
+      { id: "default", label: "System Default" },
+      ...devices.map((device) => ({ id: device.id, label: device.label })),
+    ]
   })
   const currentDevice = createMemo(() => {
     const options = deviceOptions()
@@ -272,40 +275,40 @@ export const SettingsDialog: Component = () => {
                           </Button>
                         </div>
                       </Match>
-                  </SolidSwitch>
-                </div>
+                    </SolidSwitch>
+                  </div>
 
-                <div class="flex items-center gap-2">
-                  <span class="text-12-regular text-text-subtle">Microphone:</span>
-                  <div class="flex-1">
-                    <Select
-                      options={deviceOptions()}
-                      current={currentDevice()}
-                      value={(option) => option.id}
-                      label={(option) => option.label}
-                      onSelect={(option) => {
-                        const deviceId = option?.id ?? "default"
-                        voice.settings.setDeviceId(deviceId === "default" ? null : deviceId)
-                      }}
+                  <div class="flex items-center gap-2">
+                    <span class="text-12-regular text-text-subtle">Microphone:</span>
+                    <div class="flex-1">
+                      <Select
+                        options={deviceOptions()}
+                        current={currentDevice()}
+                        value={(option) => option.id}
+                        label={(option) => option.label}
+                        onSelect={(option) => {
+                          const deviceId = option?.id ?? "default"
+                          voice.settings.setDeviceId(deviceId === "default" ? null : deviceId)
+                        }}
+                        variant="ghost"
+                        size="small"
+                        class="justify-between"
+                        disabled={!voice.state.isSupported()}
+                      />
+                    </div>
+                    <Button
                       variant="ghost"
                       size="small"
-                      class="justify-between"
+                      onClick={() => voice.actions.refreshDevices()}
                       disabled={!voice.state.isSupported()}
-                    />
+                    >
+                      Refresh
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    onClick={() => voice.actions.refreshDevices()}
-                    disabled={!voice.state.isSupported()}
-                  >
-                    Refresh
-                  </Button>
-                </div>
 
-                <Show when={voice.state.modelStatus() === "ready"}>
-                  <div class="flex items-center gap-2">
-                    <span class="text-12-regular text-text-subtle">Hotkey:</span>
+                  <Show when={voice.state.modelStatus() === "ready"}>
+                    <div class="flex items-center gap-2">
+                      <span class="text-12-regular text-text-subtle">Hotkey:</span>
                       <button
                         type="button"
                         class="px-2 py-1 rounded bg-surface-raised-base border border-border-base text-12-regular text-text-base font-mono"

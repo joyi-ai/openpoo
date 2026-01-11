@@ -65,6 +65,7 @@ interface PromptInputProps {
   paneId?: string
   sessionId?: string
   onSessionCreated?: (sessionId: string) => void
+  onSubmitted?: () => void
 }
 
 const PLACEHOLDERS = [
@@ -1386,6 +1387,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       prompt.set([{ type: "text", content: "", start: 0, end: 0 }], 0)
       setStore("imageAttachments", [])
       setStore("mode", "normal")
+      if (props.onSubmitted) props.onSubmitted()
 
       const currentModel = local.model.current()
       const currentAgent = local.agent.current()

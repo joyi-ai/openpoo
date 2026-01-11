@@ -92,6 +92,13 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
     paneCache.set(paneId, cache)
   }
 
+  function clearPanePrompt(paneId: string) {
+    const cache = paneCache.get(paneId)
+    if (!cache) return
+    if (!cache.prompt) return
+    delete cache.prompt
+  }
+
   restorePaneState(props.paneId)
 
   createEffect(() => {
@@ -186,6 +193,7 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
             paneId={props.paneId}
             sessionId={props.sessionId}
             onSessionCreated={handleSessionCreated}
+            onSubmitted={() => clearPanePrompt(props.paneId)}
           />
         </div>
       </div>

@@ -2708,9 +2708,19 @@ export namespace Server {
               },
             },
           }),
+          validator(
+            "query",
+            z.object({
+              sessionID: Identifier.schema("session").optional(),
+            }),
+          ),
           async (c) => {
-            const modes = await Agent.list()
-            return c.json(modes)
+            const query = c.req.valid("query")
+            const agents = await Agent.list()
+            if (!query.sessionID) return c.json(agents)
+            const mode = SessionMode.get(query.sessionID)
+            const filtered = SessionMode.filterAgents(mode, agents)
+            return c.json(filtered)
           },
         )
         .get(

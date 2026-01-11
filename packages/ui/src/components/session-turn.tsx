@@ -654,7 +654,11 @@ export function SessionTurn(
                     </Show>
                     {/* Response */}
                     <Show when={!working() && (response() || hasDiffs())}>
-                      <div data-slot="session-turn-summary-section" data-component="message-wrapper" data-role="assistant">
+                      <div
+                        data-slot="session-turn-summary-section"
+                        data-component="message-wrapper"
+                        data-role="assistant"
+                      >
                         <div data-slot="session-turn-summary-header">
                           <h2 data-slot="session-turn-summary-title">Response</h2>
                           <Markdown

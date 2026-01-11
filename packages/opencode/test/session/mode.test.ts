@@ -35,4 +35,25 @@ describe("SessionMode", () => {
     expect(SessionMode.isAgentAllowed(mode, "Sisyphus")).toBe(false)
     expect(SessionMode.isAgentAllowed(mode, "build")).toBe(true)
   })
+
+  test("enforces claude-code and codex allowlists", () => {
+    const claude: SessionMode.Info = { id: "claude-code" }
+    const codex: SessionMode.Info = { id: "codex" }
+    expect(SessionMode.isAgentAllowed(claude, "plan")).toBe(true)
+    expect(SessionMode.isAgentAllowed(claude, "general")).toBe(false)
+    expect(SessionMode.isAgentAllowed(codex, "plan")).toBe(true)
+    expect(SessionMode.isAgentAllowed(codex, "explore")).toBe(false)
+  })
+
+  test("applies opencode disabled agents", () => {
+    const mode: SessionMode.Info = { id: "opencode" }
+    expect(SessionMode.isAgentAllowed(mode, "Sisyphus")).toBe(false)
+    expect(SessionMode.isAgentAllowed(mode, "explore")).toBe(true)
+  })
+
+  test("defaults to blocking oh-my agents for unknown modes", () => {
+    const mode: SessionMode.Info = { id: "custom-mode" }
+    expect(SessionMode.isAgentAllowed(mode, "Sisyphus")).toBe(false)
+    expect(SessionMode.isAgentAllowed(mode, "build")).toBe(true)
+  })
 })

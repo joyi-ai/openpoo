@@ -257,11 +257,7 @@ export function Message(props: MessageProps) {
     <Switch>
       <Match when={props.message.role === "user" && props.message}>
         {(userMessage) => (
-          <UserMessageDisplay
-            message={userMessage() as UserMessage}
-            parts={props.parts}
-            actions={props.actions}
-          />
+          <UserMessageDisplay message={userMessage() as UserMessage} parts={props.parts} actions={props.actions} />
         )}
       </Match>
       <Match when={props.message.role === "assistant" && props.message}>
@@ -286,7 +282,11 @@ export function AssistantMessageDisplay(props: { message: AssistantMessage; part
   return <For each={filteredParts()}>{(part) => <Part part={part} message={props.message} />}</For>
 }
 
-export function UserMessageDisplay(props: { message: UserMessage; parts: PartType[]; actions?: MessageActionHandlers }) {
+export function UserMessageDisplay(props: {
+  message: UserMessage
+  parts: PartType[]
+  actions?: MessageActionHandlers
+}) {
   const dialog = useDialog()
   const actions = () => props.actions
   const hasActions = createMemo(() => {
@@ -347,11 +347,7 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
                       </div>
                     }
                   >
-                    <img
-                      data-slot="user-message-attachment-image"
-                      src={file.url}
-                      alt={file.filename ?? "attachment"}
-                    />
+                    <img data-slot="user-message-attachment-image" src={file.url} alt={file.filename ?? "attachment"} />
                   </Show>
                 </div>
               )}
@@ -366,11 +362,7 @@ export function UserMessageDisplay(props: { message: UserMessage; parts: PartTyp
       </div>
       <Show when={hasActions()}>
         <div data-component="message-actions-row">
-          <MessageActions
-            onEdit={actions()?.onEdit}
-            onRetry={actions()?.onRetry}
-            onDelete={actions()?.onDelete}
-          />
+          <MessageActions onEdit={actions()?.onEdit} onRetry={actions()?.onRetry} onDelete={actions()?.onDelete} />
         </div>
       </Show>
     </div>

@@ -18,7 +18,10 @@ export function DialogVoiceSettings() {
 
   const deviceOptions = createMemo(() => {
     const devices = voice.state.availableDevices()
-    return [{ id: "default", label: "System Default" }, ...devices.map((device) => ({ id: device.id, label: device.label }))]
+    return [
+      { id: "default", label: "System Default" },
+      ...devices.map((device) => ({ id: device.id, label: device.label })),
+    ]
   })
 
   const currentDevice = createMemo(() => {

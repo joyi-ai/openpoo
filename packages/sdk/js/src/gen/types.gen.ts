@@ -799,6 +799,8 @@ export type Session = {
     }
   }
   worktree?: WorktreeInfo
+  worktreeRequested?: boolean
+  worktreeCleanup?: "ask" | "always" | "never"
 }
 
 export type EventSessionCreated = {
@@ -5035,6 +5037,7 @@ export type AppAgentsData = {
   path?: never
   query?: {
     directory?: string
+    sessionID?: string
   }
   url: "/agent"
 }

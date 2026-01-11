@@ -134,9 +134,7 @@ describe("session.fork", () => {
         expect(forkedMessages.length).toBe(original.length)
         expect(forkedMessages.map((m) => m.info.role)).toEqual(original.map((m) => m.info.role))
 
-        const forkedUserIds = forkedMessages
-          .filter((m) => m.info.role === "user")
-          .map((m) => m.info.id)
+        const forkedUserIds = forkedMessages.filter((m) => m.info.role === "user").map((m) => m.info.id)
         const forkedAssistants = forkedMessages
           .filter((m) => m.info.role === "assistant")
           .map((m) => m.info as MessageV2.Assistant)

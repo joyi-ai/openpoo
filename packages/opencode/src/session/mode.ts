@@ -74,6 +74,33 @@ export namespace SessionMode {
     "multimodal-looker",
   ])
 
+  type AgentRules = {
+    allowed?: string[]
+    disabled?: string[]
+  }
+
+  const MODE_AGENT_RULES: Record<string, AgentRules> = {
+    "claude-code": {
+      allowed: ["build", "plan"],
+    },
+    codex: {
+      allowed: ["build", "plan"],
+    },
+    opencode: {
+      disabled: [
+        "Sisyphus",
+        "OpenCode-Builder",
+        "Planner-Sisyphus",
+        "oracle",
+        "librarian",
+        "frontend-ui-ux-engineer",
+        "document-writer",
+        "multimodal-looker",
+      ],
+    },
+    "oh-my-opencode": {},
+  }
+
   const state = Instance.state(() => new Map<string, Info>())
 
   function mergeOhMySettings(input?: OhMyOpenCodeSettings): OhMyOpenCodeSettings {
@@ -159,16 +186,29 @@ export namespace SessionMode {
     return OH_MY_AGENT_NAMES.has(name)
   }
 
-  export function isAgentAllowed(mode: Info | undefined, name: string): boolean {
+  function addNames(target: Set<string>, names: Iterable<string>) {
+    for (const name of names) target.add(name)
+  }
+
+  function getAgentRules(mode?: Info) {
+    const base = mode ? MODE_AGENT_RULES[mode.id] : undefined
+    const allowed = base?.allowed ? new Set(base.allowed) : undefined
+    const disabled = new Set(base?.disabled ?? [])
+
+    if (!mode) {
+      addNames(disabled, OH_MY_AGENT_NAMES)
+      return { allowed, disabled }
+    }
+
     if (!isOhMyMode(mode)) {
-      if (isOhMyAgent(name)) return false
-      return true
+      if (!base) addNames(disabled, OH_MY_AGENT_NAMES)
+      return { allowed, disabled }
     }
 
     const settings = ohMySettings(mode)
-    if (!settings) return true
+    if (!settings) return { allowed, disabled }
 
-    const disabled = new Set(settings.disabledAgents ?? [])
+    addNames(disabled, settings.disabledAgents ?? [])
     const sisyphusDisabled = settings.sisyphusAgent?.disabled === true
     const replacePlan = settings.sisyphusAgent?.replacePlan ?? true
 
@@ -181,8 +221,23 @@ export namespace SessionMode {
     if (settings.sisyphusAgent?.defaultBuilderEnabled === false) disabled.add("OpenCode-Builder")
     if (settings.sisyphusAgent?.plannerEnabled === false) disabled.add("Planner-Sisyphus")
 
-    if (disabled.has(name)) return false
+    return { allowed, disabled }
+  }
+
+  export function isAgentAllowed(mode: Info | undefined, name: string): boolean {
+    const rules = getAgentRules(mode)
+    if (rules.allowed && !rules.allowed.has(name)) return false
+    if (rules.disabled.has(name)) return false
     return true
+  }
+
+  export function filterAgents<T extends { name: string }>(mode: Info | undefined, agents: T[]): T[] {
+    const rules = getAgentRules(mode)
+    return agents.filter((agent) => {
+      if (rules.allowed && !rules.allowed.has(agent.name)) return false
+      if (rules.disabled.has(agent.name)) return false
+      return true
+    })
   }
 
   export function isSame(a?: Info, b?: Info): boolean {
