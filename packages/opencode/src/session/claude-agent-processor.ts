@@ -25,6 +25,7 @@ import path from "path"
 import os from "os"
 import { Config } from "@/config/config"
 import { McpSync } from "@/mcp/sync"
+import { ClaudePluginTransform } from "@/claude-plugin/transform"
 
 export namespace ClaudeAgentProcessor {
   const log = Log.create({ service: "claude-agent-processor" })
@@ -357,16 +358,27 @@ export namespace ClaudeAgentProcessor {
           } else if ("type" in block && block.type === "tool_use") {
             // Tool use start - create a running tool part
             const toolBlock = block as { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+            const toolName = toolBlock.name.toLowerCase()
+            const baseInput = ClaudePluginTransform.objectToCamelCase(toolBlock.input) as Record<string, unknown>
+            const toolInput = (() => {
+              if (toolName !== "bash") return baseInput
+              if (typeof baseInput.description === "string" && baseInput.description.trim()) return baseInput
+              if (typeof baseInput.command !== "string" || !baseInput.command) return baseInput
+              return {
+                ...baseInput,
+                description: baseInput.command,
+              }
+            })()
             const toolPart: MessageV2.ToolPart = {
               id: Identifier.ascending("part"),
               sessionID: ctx.sessionID,
               messageID: ctx.messageID,
               type: "tool",
               callID: toolBlock.id,
-              tool: toolBlock.name,
+              tool: toolName,
               state: {
                 status: "running",
-                input: toolBlock.input as Record<string, unknown>,
+                input: toolInput,
                 time: {
                   start: Date.now(),
                 },
