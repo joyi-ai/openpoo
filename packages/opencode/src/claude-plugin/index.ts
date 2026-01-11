@@ -270,6 +270,48 @@ export namespace ClaudePlugin {
     return plugins.flatMap((p) => p.lsp)
   }
 
+  export async function findCommand(name: string): Promise<ClaudePluginLoader.LoadedCommand | undefined> {
+    const plugins = await list()
+    for (const plugin of plugins) {
+      const command = plugin.commands.find((cmd) => cmd.fullName === name)
+      if (command) return command
+    }
+    return undefined
+  }
+
+  export async function findAgent(name: string): Promise<ClaudePluginLoader.LoadedAgent | undefined> {
+    const plugins = await list()
+    for (const plugin of plugins) {
+      const agent = plugin.agents.find((item) => item.fullName === name)
+      if (agent) return agent
+    }
+    return undefined
+  }
+
+  export async function findSkill(name: string): Promise<ClaudePluginLoader.LoadedSkill | undefined> {
+    const plugins = await list()
+    for (const plugin of plugins) {
+      const skill = plugin.skills.find((item) => item.name === name)
+      if (skill) return skill
+    }
+    return undefined
+  }
+
+  export async function isCommand(name: string): Promise<boolean> {
+    const command = await findCommand(name)
+    return !!command
+  }
+
+  export async function isAgent(name: string): Promise<boolean> {
+    const agent = await findAgent(name)
+    return !!agent
+  }
+
+  export async function isSkill(name: string): Promise<boolean> {
+    const skill = await findSkill(name)
+    return !!skill
+  }
+
   /**
    * Trigger hooks for an event
    */

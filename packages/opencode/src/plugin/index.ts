@@ -8,9 +8,52 @@ import { BunProc } from "../bun"
 import { Instance } from "../project/instance"
 import { Flag } from "../flag/flag"
 import { CodexAuthPlugin } from "./codex"
+import { SessionMode } from "@/session/mode"
 
 export namespace Plugin {
   const log = Log.create({ service: "plugin" })
+
+  type Entry = {
+    name: string
+    hook: Hooks
+  }
+
+  function getSessionID(input: unknown): string | undefined {
+    if (!input || typeof input !== "object") return undefined
+    if (!("sessionID" in input)) return undefined
+    const value = (input as { sessionID?: unknown }).sessionID
+    if (typeof value !== "string") return undefined
+    return value
+  }
+
+  function getEventSessionID(event: unknown): string | undefined {
+    if (!event || typeof event !== "object") return undefined
+    if (!("properties" in event)) return undefined
+    const props = (event as { properties?: unknown }).properties
+    if (!props || typeof props !== "object") return undefined
+    if ("sessionID" in props) {
+      const value = (props as { sessionID?: unknown }).sessionID
+      if (typeof value === "string") return value
+    }
+    if (!("info" in props)) return undefined
+    const info = (props as { info?: unknown }).info
+    if (!info || typeof info !== "object") return undefined
+    if ("sessionID" in info) {
+      const value = (info as { sessionID?: unknown }).sessionID
+      if (typeof value === "string") return value
+    }
+    if (!("id" in info)) return undefined
+    const id = (info as { id?: unknown }).id
+    if (typeof id !== "string") return undefined
+    if (!id.startsWith("session_")) return undefined
+    return id
+  }
+
+  function isPluginEnabled(name: string, sessionID?: string): boolean {
+    if (name !== "oh-my-opencode") return true
+    if (!sessionID) return false
+    return SessionMode.isOhMyMode(SessionMode.get(sessionID))
+  }
 
   const BUILTIN = ["opencode-copilot-auth@0.0.11", "opencode-anthropic-auth@0.0.8"]
 
@@ -24,7 +67,7 @@ export namespace Plugin {
       fetch: async (...args) => Server.App().fetch(...args),
     })
     const config = await Config.get()
-    const hooks: Hooks[] = []
+    const entries: Entry[] = []
     const input: PluginInput = {
       client,
       project: Instance.project,
@@ -34,12 +77,27 @@ export namespace Plugin {
       $: Bun.$,
     }
 
+    const resolvePlugin = async (spec: string) => {
+      if (spec.startsWith("file://")) return spec
+      const lastAtIndex = spec.lastIndexOf("@")
+      const pkg = lastAtIndex > 0 ? spec.substring(0, lastAtIndex) : spec
+      const version = lastAtIndex > 0 ? spec.substring(lastAtIndex + 1) : "latest"
+      const builtin = BUILTIN.some((x) => x.startsWith(pkg + "@"))
+      const installed = await BunProc.install(pkg, version).catch((err) => {
+        if (builtin) return ""
+        throw err
+      })
+      if (!installed) return undefined
+      return installed
+    }
+
     // Load internal plugins first
     if (!Flag.OPENCODE_DISABLE_DEFAULT_PLUGINS) {
       for (const plugin of INTERNAL_PLUGINS) {
-        log.info("loading internal plugin", { name: plugin.name })
+        const name = plugin.name || "internal"
+        log.info("loading internal plugin", { name })
         const init = await plugin(input)
-        hooks.push(init)
+        entries.push({ name, hook: init })
       }
     }
 
@@ -47,22 +105,14 @@ export namespace Plugin {
     if (!Flag.OPENCODE_DISABLE_DEFAULT_PLUGINS) {
       plugins.push(...BUILTIN)
     }
-    for (let plugin of plugins) {
+    for (const plugin of plugins) {
       // ignore old codex plugin since it is supported first party now
       if (plugin.includes("opencode-openai-codex-auth")) continue
       log.info("loading plugin", { path: plugin })
-      if (!plugin.startsWith("file://")) {
-        const lastAtIndex = plugin.lastIndexOf("@")
-        const pkg = lastAtIndex > 0 ? plugin.substring(0, lastAtIndex) : plugin
-        const version = lastAtIndex > 0 ? plugin.substring(lastAtIndex + 1) : "latest"
-        const builtin = BUILTIN.some((x) => x.startsWith(pkg + "@"))
-        plugin = await BunProc.install(pkg, version).catch((err) => {
-          if (builtin) return ""
-          throw err
-        })
-        if (!plugin) continue
-      }
-      const mod = await import(plugin)
+      const name = Config.getPluginName(plugin)
+      const resolved = await resolvePlugin(plugin)
+      if (!resolved) continue
+      const mod = await import(resolved)
       // Prevent duplicate initialization when plugins export the same function
       // as both a named export and default export (e.g., `export const X` and `export default X`).
       // Object.entries(mod) would return both entries pointing to the same function reference.
@@ -71,12 +121,12 @@ export namespace Plugin {
         if (seen.has(fn)) continue
         seen.add(fn)
         const init = await fn(input)
-        hooks.push(init)
+        entries.push({ name, hook: init })
       }
     }
 
     return {
-      hooks,
+      entries,
       input,
     }
   })
@@ -87,8 +137,10 @@ export namespace Plugin {
     Output = Parameters<Required<Hooks>[Name]>[1],
   >(name: Name, input: Input, output: Output): Promise<Output> {
     if (!name) return output
-    for (const hook of await state().then((x) => x.hooks)) {
-      const fn = hook[name]
+    const sessionID = getSessionID(input)
+    for (const entry of await state().then((x) => x.entries)) {
+      if (!isPluginEnabled(entry.name, sessionID)) continue
+      const fn = entry.hook[name]
       if (!fn) continue
       // @ts-expect-error if you feel adventurous, please fix the typing, make sure to bump the try-counter if you
       // give up.
@@ -99,20 +151,26 @@ export namespace Plugin {
   }
 
   export async function list() {
-    return state().then((x) => x.hooks)
+    return entries().then((x) => x.map((entry) => entry.hook))
+  }
+
+  export async function entries() {
+    return state().then((x) => x.entries)
   }
 
   export async function init() {
-    const hooks = await state().then((x) => x.hooks)
+    const hooks = await state().then((x) => x.entries)
     const config = await Config.get()
     for (const hook of hooks) {
       // @ts-expect-error this is because we haven't moved plugin to sdk v2
-      await hook.config?.(config)
+      await hook.hook.config?.(config)
     }
     Bus.subscribeAll(async (input) => {
-      const hooks = await state().then((x) => x.hooks)
+      const sessionID = getEventSessionID(input)
+      const hooks = await state().then((x) => x.entries)
       for (const hook of hooks) {
-        hook["event"]?.({
+        if (!isPluginEnabled(hook.name, sessionID)) continue
+        hook.hook["event"]?.({
           event: input,
         })
       }

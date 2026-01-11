@@ -48,6 +48,7 @@ import { ClaudeAgentProcessor } from "./claude-agent-processor"
 import { ClaudeAgent } from "@/provider/claude-agent"
 import { ClaudePlugin } from "@/claude-plugin"
 import { CodexProcessor } from "./codex-processor"
+import { SessionMode } from "./mode"
 
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
@@ -108,6 +109,7 @@ export namespace SessionPrompt {
     thinking: z.boolean().optional(),
     /** Use Claude Code flow (Agent SDK) - for OpenRouter models in Claude Code mode */
     claudeCodeFlow: z.boolean().optional(),
+    mode: SessionMode.Info.optional(),
     parts: z.array(
       z.discriminatedUnion("type", [
         MessageV2.TextPart.omit({
@@ -155,9 +157,46 @@ export namespace SessionPrompt {
   })
   export type PromptInput = z.infer<typeof PromptInput>
 
+  async function applyMode(session: Session.Info, mode?: SessionMode.Info) {
+    if (!mode) return
+    const next = SessionMode.normalize(mode)
+    if (!next) return
+    SessionMode.set(session.id, next)
+    if (SessionMode.isSame(session.mode, next)) return
+    await Session.update(session.id, (draft) => {
+      draft.mode = next
+    })
+  }
+
+  async function assertAgentAllowed(sessionID: string, name: string) {
+    const mode = SessionMode.get(sessionID)
+    if (!SessionMode.isAgentAllowed(mode, name)) {
+      throw new NamedError.Unknown({
+        message: `Agent "${name}" is disabled for the current mode.`,
+      })
+    }
+    const claudeAgent = await ClaudePlugin.findAgent(name)
+    if (!claudeAgent) return
+    if (SessionMode.isOhMyPlugin(claudeAgent.pluginName) && !SessionMode.isOhMyMode(mode)) {
+      throw new NamedError.Unknown({
+        message: `Agent "${name}" is disabled for the current mode.`,
+      })
+    }
+    if (SessionMode.isClaudeFeatureEnabled(mode, "agents")) return
+    throw new NamedError.Unknown({
+      message: `Claude plugin agent "${name}" is disabled for the current mode.`,
+    })
+  }
+
+  function claudeHooksEnabled(sessionID: string) {
+    return SessionMode.isClaudeFeatureEnabled(SessionMode.get(sessionID), "hooks")
+  }
+
   export const prompt = fn(PromptInput, async (input) => {
     const session = await Session.get(input.sessionID)
     await SessionRevert.cleanup(session)
+    SessionMode.set(session.id, session.mode)
+    await applyMode(session, input.mode)
 
     const message = await createUserMessage(input)
 
@@ -167,24 +206,28 @@ export namespace SessionPrompt {
       .map((p) => p.text)
       .join("\n")
 
-    // Trigger UserPromptSubmit hook (skipped for sub-sessions)
-    await ClaudePlugin.Hooks.trigger("UserPromptSubmit", {
-      sessionID: input.sessionID,
-      parentSessionId: session.parentID,
-      messageID: message.info.id,
-      prompt: promptText,
-    })
+    const mode = SessionMode.get(input.sessionID)
+    const hooksEnabled = SessionMode.isClaudeFeatureEnabled(mode, "hooks")
+    if (hooksEnabled) {
+      // Trigger UserPromptSubmit hook (skipped for sub-sessions)
+      await ClaudePlugin.Hooks.trigger("UserPromptSubmit", {
+        sessionID: input.sessionID,
+        parentSessionId: session.parentID,
+        messageID: message.info.id,
+        prompt: promptText,
+      })
 
-    // Mark first message processed for this session
-    if (ClaudePlugin.Hooks.isFirstMessage(input.sessionID)) {
-      ClaudePlugin.Hooks.markFirstMessageProcessed(input.sessionID)
+      // Mark first message processed for this session
+      if (ClaudePlugin.Hooks.isFirstMessage(input.sessionID)) {
+        ClaudePlugin.Hooks.markFirstMessageProcessed(input.sessionID)
+      }
+
+      // Record user message in transcript
+      await ClaudePlugin.Transcript.recordUserMessage({
+        sessionID: input.sessionID,
+        content: promptText,
+      })
     }
-
-    // Record user message in transcript
-    await ClaudePlugin.Transcript.recordUserMessage({
-      sessionID: input.sessionID,
-      content: promptText,
-    })
 
     await Session.touch(input.sessionID)
 
@@ -842,7 +885,11 @@ export namespace SessionPrompt {
         }
       }
 
-      await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: sessionMessages })
+      await Plugin.trigger(
+        "experimental.chat.messages.transform",
+        { sessionID },
+        { messages: sessionMessages },
+      )
 
       const result = await processor.process({
         user: lastUser,
@@ -939,7 +986,7 @@ export namespace SessionPrompt {
       },
     })
 
-    for (const item of await ToolRegistry.tools(input.model.providerID, input.agent)) {
+    for (const item of await ToolRegistry.tools(input.model.providerID, input.agent, input.session.id)) {
       const schema = ProviderTransform.schema(input.model, z.toJSONSchema(item.parameters))
       tools[item.id] = tool({
         id: item.id as any,
@@ -970,12 +1017,14 @@ export namespace SessionPrompt {
           })
 
           // Record tool use in transcript
-          await ClaudePlugin.Transcript.recordToolUse({
-            sessionID: ctx.sessionID,
-            toolName: item.id,
-            toolInput: args,
-            toolUseId: options.toolCallId,
-          })
+          if (claudeHooksEnabled(ctx.sessionID)) {
+            await ClaudePlugin.Transcript.recordToolUse({
+              sessionID: ctx.sessionID,
+              toolName: item.id,
+              toolInput: args,
+              toolUseId: options.toolCallId,
+            })
+          }
 
           // Handle hook decisions
           for (const hookResult of preToolResults) {
@@ -1016,15 +1065,19 @@ export namespace SessionPrompt {
             })
 
             // Record tool result in transcript
-            await ClaudePlugin.Transcript.recordToolResult({
-              sessionID: ctx.sessionID,
-              toolName: item.id,
-              toolOutput:
-                typeof result.output === "string"
-                  ? { output: result.output }
-                  : (result.output as Record<string, unknown>),
-              toolUseId: options.toolCallId,
-            })
+            if (claudeHooksEnabled(ctx.sessionID)) {
+              if (claudeHooksEnabled(ctx.sessionID)) {
+                await ClaudePlugin.Transcript.recordToolResult({
+                  sessionID: ctx.sessionID,
+                  toolName: item.id,
+                  toolOutput:
+                    typeof result.output === "string"
+                      ? { output: result.output }
+                      : (result.output as Record<string, unknown>),
+                  toolUseId: options.toolCallId,
+                })
+              }
+            }
 
             return result
           } catch (error) {
@@ -1040,13 +1093,17 @@ export namespace SessionPrompt {
             })
 
             // Record tool failure in transcript
-            await ClaudePlugin.Transcript.recordToolResult({
-              sessionID: ctx.sessionID,
-              toolName: item.id,
-              toolOutput: {},
-              toolUseId: options.toolCallId,
-              error: error instanceof Error ? error.message : String(error),
-            })
+            if (claudeHooksEnabled(ctx.sessionID)) {
+              if (claudeHooksEnabled(ctx.sessionID)) {
+                await ClaudePlugin.Transcript.recordToolResult({
+                  sessionID: ctx.sessionID,
+                  toolName: item.id,
+                  toolOutput: {},
+                  toolUseId: options.toolCallId,
+                  error: error instanceof Error ? error.message : String(error),
+                })
+              }
+            }
 
             throw error
           }
@@ -1091,12 +1148,14 @@ export namespace SessionPrompt {
         })
 
         // Record tool use in transcript
-        await ClaudePlugin.Transcript.recordToolUse({
-          sessionID: ctx.sessionID,
-          toolName: key,
-          toolInput: args,
-          toolUseId: opts.toolCallId,
-        })
+        if (claudeHooksEnabled(ctx.sessionID)) {
+          await ClaudePlugin.Transcript.recordToolUse({
+            sessionID: ctx.sessionID,
+            toolName: key,
+            toolInput: args,
+            toolUseId: opts.toolCallId,
+          })
+        }
 
         // Handle hook decisions
         for (const hookResult of preToolResults) {
@@ -1171,12 +1230,14 @@ export namespace SessionPrompt {
           }
 
           // Record tool result in transcript
-          await ClaudePlugin.Transcript.recordToolResult({
-            sessionID: ctx.sessionID,
-            toolName: key,
-            toolOutput: { output: toolOutput.output },
-            toolUseId: opts.toolCallId,
-          })
+          if (claudeHooksEnabled(ctx.sessionID)) {
+            await ClaudePlugin.Transcript.recordToolResult({
+              sessionID: ctx.sessionID,
+              toolName: key,
+              toolOutput: { output: toolOutput.output },
+              toolUseId: opts.toolCallId,
+            })
+          }
 
           return toolOutput
         } catch (error) {
@@ -1192,13 +1253,15 @@ export namespace SessionPrompt {
           })
 
           // Record tool failure in transcript
-          await ClaudePlugin.Transcript.recordToolResult({
-            sessionID: ctx.sessionID,
-            toolName: key,
-            toolOutput: {},
-            toolUseId: opts.toolCallId,
-            error: error instanceof Error ? error.message : String(error),
-          })
+          if (claudeHooksEnabled(ctx.sessionID)) {
+            await ClaudePlugin.Transcript.recordToolResult({
+              sessionID: ctx.sessionID,
+              toolName: key,
+              toolOutput: {},
+              toolUseId: opts.toolCallId,
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
 
           throw error
         }
@@ -1217,6 +1280,7 @@ export namespace SessionPrompt {
 
   async function createUserMessage(input: PromptInput) {
     const agent = await Agent.get(input.agent ?? (await Agent.defaultAgent()))
+    await assertAgentAllowed(input.sessionID, agent.name)
     const info: MessageV2.Info = {
       id: input.messageID ?? Identifier.ascending("message"),
       role: "user",
@@ -1624,6 +1688,7 @@ export namespace SessionPrompt {
       })
       .optional(),
     command: z.string(),
+    mode: SessionMode.Info.optional(),
   })
   export type ShellInput = z.infer<typeof ShellInput>
   export async function shell(input: ShellInput) {
@@ -1637,6 +1702,9 @@ export namespace SessionPrompt {
     if (session.revert) {
       SessionRevert.cleanup(session)
     }
+    SessionMode.set(session.id, session.mode)
+    await applyMode(session, input.mode)
+    await assertAgentAllowed(input.sessionID, input.agent)
     const agent = await Agent.get(input.agent)
     const model = input.model ?? agent.model ?? (await lastModel(input.sessionID))
     const userMsg: MessageV2.User = {
@@ -1853,6 +1921,7 @@ export namespace SessionPrompt {
     arguments: z.string(),
     command: z.string(),
     variant: z.string().optional(),
+    mode: SessionMode.Info.optional(),
     parts: z
       .array(
         z.discriminatedUnion("type", [
@@ -1880,8 +1949,26 @@ export namespace SessionPrompt {
 
   export async function command(input: CommandInput) {
     log.info("command", input)
+    const session = await Session.get(input.sessionID)
+    SessionMode.set(session.id, session.mode)
+    await applyMode(session, input.mode)
+    const mode = SessionMode.get(input.sessionID)
+    const claudeCommand = await ClaudePlugin.findCommand(input.command)
+    if (claudeCommand) {
+      if (SessionMode.isOhMyPlugin(claudeCommand.pluginName) && !SessionMode.isOhMyMode(mode)) {
+        throw new NamedError.Unknown({
+          message: `Command "${input.command}" is disabled for the current mode.`,
+        })
+      }
+      if (!SessionMode.isClaudeFeatureEnabled(mode, "commands")) {
+        throw new NamedError.Unknown({
+          message: `Claude plugin command "${input.command}" is disabled for the current mode.`,
+        })
+      }
+    }
     const command = await Command.get(input.command)
     const agentName = command.agent ?? input.agent ?? (await Agent.defaultAgent())
+    await assertAgentAllowed(input.sessionID, agentName)
 
     const raw = input.arguments.match(argsRegex) ?? []
     const args = raw.map((arg) => arg.replace(quoteTrimRegex, ""))

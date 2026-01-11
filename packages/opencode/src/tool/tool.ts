@@ -25,6 +25,9 @@ export namespace Tool {
   }
   export interface Info<Parameters extends z.ZodType = z.ZodType, M extends Metadata = Metadata> {
     id: string
+    source?: {
+      plugin?: string
+    }
     init: (ctx?: InitContext) => Promise<{
       description: string
       parameters: Parameters

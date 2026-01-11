@@ -72,6 +72,13 @@ export function Prompt(props: PromptProps) {
   const renderer = useRenderer()
   const { theme, syntax } = useTheme()
   const kv = useKV()
+  const modePayload = createMemo(() => {
+    const current = local.mode.current()
+    return {
+      id: current.id,
+      settings: current.settings,
+    }
+  })
 
   function promptModelWarning() {
     toast.show({
@@ -511,7 +518,7 @@ export function Prompt(props: PromptProps) {
     const sessionID = props.sessionID
       ? props.sessionID
       : await (async () => {
-          const sessionID = await sdk.client.session.create({}).then((x) => x.data!.id)
+          const sessionID = await sdk.client.session.create({ mode: modePayload() }).then((x) => x.data!.id)
           return sessionID
         })()
     const messageID = Identifier.ascending("message")
@@ -549,6 +556,7 @@ export function Prompt(props: PromptProps) {
           modelID: selectedModel.modelID,
         },
         command: inputText,
+        mode: modePayload(),
       })
       setStore("mode", "normal")
     } else if (
@@ -574,6 +582,7 @@ export function Prompt(props: PromptProps) {
             id: Identifier.ascending("part"),
             ...x,
           })),
+        mode: modePayload(),
       })
     } else {
       sdk.client.session.prompt({
@@ -594,6 +603,7 @@ export function Prompt(props: PromptProps) {
             ...x,
           })),
         ],
+        mode: modePayload(),
       })
     }
     history.append({

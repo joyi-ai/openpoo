@@ -530,6 +530,35 @@ export type EventCommandExecuted = {
   }
 }
 
+export type OhMyOpenCodeSettings = {
+  sisyphusAgent?: {
+    disabled?: boolean
+    defaultBuilderEnabled?: boolean
+    plannerEnabled?: boolean
+    replacePlan?: boolean
+  }
+  disabledAgents?: Array<string>
+  disabledHooks?: Array<string>
+  claudeCode?: {
+    mcp?: boolean
+    commands?: boolean
+    skills?: boolean
+    agents?: boolean
+    hooks?: boolean
+    plugins?: boolean
+  }
+  autoUpdate?: boolean
+}
+
+export type ModeSettings = {
+  ohMyOpenCode?: OhMyOpenCodeSettings
+}
+
+export type SessionMode = {
+  id: string
+  settings?: ModeSettings
+}
+
 export type Session = {
   id: string
   projectID: string
@@ -557,6 +586,7 @@ export type Session = {
     snapshot?: string
     diff?: string
   }
+  mode?: SessionMode
 }
 
 export type EventSessionCreated = {
@@ -2072,6 +2102,7 @@ export type SessionCreateData = {
   body?: {
     parentID?: string
     title?: string
+    mode?: SessionMode
   }
   path?: never
   query?: {
@@ -2196,6 +2227,7 @@ export type SessionGetResponse = SessionGetResponses[keyof SessionGetResponses]
 export type SessionUpdateData = {
   body?: {
     title?: string
+    mode?: SessionMode
   }
   path: {
     id: string
@@ -2587,6 +2619,7 @@ export type SessionPromptData = {
     tools?: {
       [key: string]: boolean
     }
+    mode?: SessionMode
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
   path: {
@@ -2682,6 +2715,7 @@ export type SessionPromptAsyncData = {
     tools?: {
       [key: string]: boolean
     }
+    mode?: SessionMode
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
   path: {
@@ -2725,6 +2759,7 @@ export type SessionCommandData = {
     model?: string
     arguments: string
     command: string
+    mode?: SessionMode
   }
   path: {
     /**
@@ -2771,6 +2806,7 @@ export type SessionShellData = {
       modelID: string
     }
     command: string
+    mode?: SessionMode
   }
   path: {
     /**

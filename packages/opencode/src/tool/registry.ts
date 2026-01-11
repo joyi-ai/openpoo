@@ -25,6 +25,7 @@ import { Flag } from "@/flag/flag"
 import { Log } from "@/util/log"
 import { LspTool } from "./lsp"
 import { Truncate } from "./truncation"
+import { SessionMode } from "@/session/mode"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -48,19 +49,20 @@ export namespace ToolRegistry {
       }
     }
 
-    const plugins = await Plugin.list()
+    const plugins = await Plugin.entries()
     for (const plugin of plugins) {
-      for (const [id, def] of Object.entries(plugin.tool ?? {})) {
-        custom.push(fromPlugin(id, def))
+      for (const [id, def] of Object.entries(plugin.hook.tool ?? {})) {
+        custom.push(fromPlugin(id, def, plugin.name))
       }
     }
 
     return { custom }
   })
 
-  function fromPlugin(id: string, def: ToolDefinition): Tool.Info {
+  function fromPlugin(id: string, def: ToolDefinition, plugin?: string): Tool.Info {
     return {
       id,
+      source: plugin ? { plugin } : undefined,
       init: async (initCtx) => ({
         parameters: z.object(def.args),
         description: def.description,
@@ -117,11 +119,13 @@ export namespace ToolRegistry {
     return all().then((x) => x.map((t) => t.id))
   }
 
-  export async function tools(providerID: string, agent?: Agent.Info) {
+  export async function tools(providerID: string, agent?: Agent.Info, sessionID?: string) {
     const tools = await all()
+    const mode = sessionID ? SessionMode.get(sessionID) : undefined
     const result = await Promise.all(
       tools
         .filter((t) => {
+          if (t.source?.plugin === "oh-my-opencode" && !SessionMode.isOhMyMode(mode)) return false
           // Enable websearch/codesearch for zen users OR via enable flag
           if (t.id === "codesearch" || t.id === "websearch") {
             return providerID === "opencode" || Flag.OPENCODE_ENABLE_EXA

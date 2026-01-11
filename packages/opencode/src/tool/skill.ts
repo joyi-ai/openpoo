@@ -4,6 +4,8 @@ import { Tool } from "./tool"
 import { Skill } from "../skill"
 import { ConfigMarkdown } from "../config/markdown"
 import { PermissionNext } from "../permission/next"
+import { SessionMode } from "@/session/mode"
+import { ClaudePlugin } from "@/claude-plugin"
 
 const parameters = z.object({
   name: z.string().describe("The skill identifier from available_skills (e.g., 'code-review' or 'category/helper')"),
@@ -42,6 +44,16 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
     description,
     parameters,
     async execute(params: z.infer<typeof parameters>, ctx) {
+      const mode = SessionMode.get(ctx.sessionID)
+      const claudeSkill = await ClaudePlugin.findSkill(params.name)
+      if (claudeSkill) {
+        if (SessionMode.isOhMyPlugin(claudeSkill.pluginName) && !SessionMode.isOhMyMode(mode)) {
+          throw new Error(`Skill "${params.name}" is disabled for the current mode.`)
+        }
+        if (!SessionMode.isClaudeFeatureEnabled(mode, "skills")) {
+          throw new Error(`Skill "${params.name}" is disabled for the current mode.`)
+        }
+      }
       const skill = await Skill.get(params.name)
 
       if (!skill) {

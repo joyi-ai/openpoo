@@ -39,6 +39,7 @@ import { getDirectory, getFilename } from "@opencode-ai/util/path"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { showToast } from "@opencode-ai/ui/toast"
 import { SettingsPopover } from "@/components/settings-popover"
+import { SettingsDialogButton } from "@/components/settings-dialog"
 import { MegaSelector } from "@/components/mega-selector"
 import { useCommand } from "@/context/command"
 import { Persist, persisted } from "@/utils/persist"
@@ -167,6 +168,14 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   )
   const working = createMemo(() => status()?.type !== "idle")
   const [submitting, setSubmitting] = createSignal(false)
+  const modePayload = createMemo(() => {
+    const current = local.mode.current()
+    if (!current) return undefined
+    return {
+      id: current.id,
+      settings: current.settings,
+    }
+  })
 
   const [store, setStore] = createStore<{
     popover: "at" | "slash" | null
@@ -262,6 +271,17 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     }, 6500)
     onCleanup(() => clearInterval(interval))
   })
+
+  createEffect(
+    on(
+      () => [effectiveSessionId(), modePayload()] as const,
+      ([sessionId, mode]) => {
+        if (!sessionId || !mode) return
+        sdk.client.session.update({ sessionID: sessionId, mode }).catch(() => {})
+      },
+      { defer: true },
+    ),
+  )
 
   const [composing, setComposing] = createSignal(false)
   const isImeComposing = (event: KeyboardEvent) => event.isComposing || composing() || event.keyCode === 229
@@ -1252,7 +1272,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         // TODO: worktree support pending SDK regeneration
         // const worktreeEnabled = layout.worktree.enabled()
         // const worktreeCleanup = layout.worktree.cleanup()
-        const created = await sdk.client.session.create({})
+        const created = await sdk.client.session.create({ mode: modePayload() })
         existing = created.data ?? undefined
         if (existing) {
           if (props.onSessionCreated) {
@@ -1378,6 +1398,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             agent,
             model,
             command: text,
+            mode: modePayload(),
           })
           .then((response) => {
             const data = response.data
@@ -1411,6 +1432,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               agent,
               model: `${model.providerID}/${model.modelID}`,
               variant,
+              mode: modePayload(),
             })
             .then((response) => {
               const data = response.data
@@ -1464,6 +1486,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
           messageID,
           parts: requestParts,
           variant,
+          mode: modePayload(),
           // TODO: thinking and claudeCodeFlow pending SDK regeneration
         })
         .then((response) => {
@@ -1741,7 +1764,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               </Match>
               <Match when={store.mode === "normal"}>
                 <MegaSelector />
-                <SettingsPopover />
+                <Show when={platform.platform === "desktop"} fallback={<SettingsPopover />}>
+                  <SettingsDialogButton />
+                </Show>
               </Match>
             </Switch>
           </div>

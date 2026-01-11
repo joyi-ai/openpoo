@@ -42,8 +42,9 @@ export namespace Skill {
 
   export const state = Instance.state(async () => {
     const skills: Record<string, Info> = {}
+    const sources: Record<string, "claude" | "opencode" | "claude-plugin"> = {}
 
-    const addSkill = async (match: string) => {
+    const addSkill = async (match: string, source: "claude" | "opencode") => {
       const md = await ConfigMarkdown.parse(match)
       if (!md) {
         return
@@ -61,11 +62,13 @@ export namespace Skill {
         })
       }
 
-      skills[parsed.data.name] = {
+      const name = parsed.data.name
+      skills[name] = {
         name: parsed.data.name,
         description: parsed.data.description,
         location: match,
       }
+      sources[name] = source
     }
 
     // Scan .claude/skills/ directories (project-level)
@@ -98,7 +101,7 @@ export namespace Skill {
         })
 
         for (const match of matches) {
-          await addSkill(match)
+          await addSkill(match, "claude")
         }
       }
     }
@@ -111,7 +114,7 @@ export namespace Skill {
         onlyFiles: true,
         followSymlinks: true,
       })) {
-        await addSkill(match)
+        await addSkill(match, "opencode")
       }
     }
 
@@ -130,16 +133,26 @@ export namespace Skill {
         description: skill.description,
         location: skill.location,
       }
+      sources[skill.name] = "claude-plugin"
     }
 
-    return skills
+    return { skills, sources }
   })
 
   export async function get(name: string) {
-    return state().then((x) => x[name])
+    return state().then((x) => x.skills[name])
   }
 
   export async function all() {
-    return state().then((x) => Object.values(x))
+    return state().then((x) => Object.values(x.skills))
+  }
+
+  export async function isClaudeSkill(name: string) {
+    return state().then((x) => {
+      const source = x.sources[name]
+      if (!source) return false
+      if (source === "opencode") return false
+      return true
+    })
   }
 }

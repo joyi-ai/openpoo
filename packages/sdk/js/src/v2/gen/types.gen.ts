@@ -826,6 +826,30 @@ export type Session = {
     snapshot?: string
     diff?: string
   }
+  mode?: {
+    id: string
+    settings?: {
+      ohMyOpenCode?: {
+        sisyphusAgent?: {
+          disabled?: boolean
+          defaultBuilderEnabled?: boolean
+          plannerEnabled?: boolean
+          replacePlan?: boolean
+        }
+        disabledAgents?: Array<string>
+        disabledHooks?: Array<string>
+        claudeCode?: {
+          mcp?: boolean
+          commands?: boolean
+          skills?: boolean
+          agents?: boolean
+          hooks?: boolean
+          plugins?: boolean
+        }
+        autoUpdate?: boolean
+      }
+    }
+  }
   worktree?: WorktreeInfo
 }
 
@@ -3328,6 +3352,30 @@ export type SessionCreateData = {
     permission?: PermissionRuleset
     useWorktree?: boolean
     worktreeCleanup?: "ask" | "always" | "never"
+    mode?: {
+      id: string
+      settings?: {
+        ohMyOpenCode?: {
+          sisyphusAgent?: {
+            disabled?: boolean
+            defaultBuilderEnabled?: boolean
+            plannerEnabled?: boolean
+            replacePlan?: boolean
+          }
+          disabledAgents?: Array<string>
+          disabledHooks?: Array<string>
+          claudeCode?: {
+            mcp?: boolean
+            commands?: boolean
+            skills?: boolean
+            agents?: boolean
+            hooks?: boolean
+            plugins?: boolean
+          }
+          autoUpdate?: boolean
+        }
+      }
+    }
   }
   path?: never
   query?: {
@@ -3455,6 +3503,30 @@ export type SessionUpdateData = {
     title?: string
     time?: {
       archived?: number
+    }
+    mode?: {
+      id: string
+      settings?: {
+        ohMyOpenCode?: {
+          sisyphusAgent?: {
+            disabled?: boolean
+            defaultBuilderEnabled?: boolean
+            plannerEnabled?: boolean
+            replacePlan?: boolean
+          }
+          disabledAgents?: Array<string>
+          disabledHooks?: Array<string>
+          claudeCode?: {
+            mcp?: boolean
+            commands?: boolean
+            skills?: boolean
+            agents?: boolean
+            hooks?: boolean
+            plugins?: boolean
+          }
+          autoUpdate?: boolean
+        }
+      }
     }
   }
   path: {
@@ -3829,6 +3901,30 @@ export type SessionPromptData = {
     variant?: string
     thinking?: boolean
     claudeCodeFlow?: boolean
+    mode?: {
+      id: string
+      settings?: {
+        ohMyOpenCode?: {
+          sisyphusAgent?: {
+            disabled?: boolean
+            defaultBuilderEnabled?: boolean
+            plannerEnabled?: boolean
+            replacePlan?: boolean
+          }
+          disabledAgents?: Array<string>
+          disabledHooks?: Array<string>
+          claudeCode?: {
+            mcp?: boolean
+            commands?: boolean
+            skills?: boolean
+            agents?: boolean
+            hooks?: boolean
+            plugins?: boolean
+          }
+          autoUpdate?: boolean
+        }
+      }
+    }
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
   path: {
@@ -4039,6 +4135,30 @@ export type SessionPromptAsyncData = {
     variant?: string
     thinking?: boolean
     claudeCodeFlow?: boolean
+    mode?: {
+      id: string
+      settings?: {
+        ohMyOpenCode?: {
+          sisyphusAgent?: {
+            disabled?: boolean
+            defaultBuilderEnabled?: boolean
+            plannerEnabled?: boolean
+            replacePlan?: boolean
+          }
+          disabledAgents?: Array<string>
+          disabledHooks?: Array<string>
+          claudeCode?: {
+            mcp?: boolean
+            commands?: boolean
+            skills?: boolean
+            agents?: boolean
+            hooks?: boolean
+            plugins?: boolean
+          }
+          autoUpdate?: boolean
+        }
+      }
+    }
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
   path: {
@@ -4080,6 +4200,30 @@ export type SessionCommandData = {
     arguments: string
     command: string
     variant?: string
+    mode?: {
+      id: string
+      settings?: {
+        ohMyOpenCode?: {
+          sisyphusAgent?: {
+            disabled?: boolean
+            defaultBuilderEnabled?: boolean
+            plannerEnabled?: boolean
+            replacePlan?: boolean
+          }
+          disabledAgents?: Array<string>
+          disabledHooks?: Array<string>
+          claudeCode?: {
+            mcp?: boolean
+            commands?: boolean
+            skills?: boolean
+            agents?: boolean
+            hooks?: boolean
+            plugins?: boolean
+          }
+          autoUpdate?: boolean
+        }
+      }
+    }
     parts?: Array<{
       id?: string
       type: "file"
@@ -4131,6 +4275,30 @@ export type SessionShellData = {
       modelID: string
     }
     command: string
+    mode?: {
+      id: string
+      settings?: {
+        ohMyOpenCode?: {
+          sisyphusAgent?: {
+            disabled?: boolean
+            defaultBuilderEnabled?: boolean
+            plannerEnabled?: boolean
+            replacePlan?: boolean
+          }
+          disabledAgents?: Array<string>
+          disabledHooks?: Array<string>
+          claudeCode?: {
+            mcp?: boolean
+            commands?: boolean
+            skills?: boolean
+            agents?: boolean
+            hooks?: boolean
+            plugins?: boolean
+          }
+          autoUpdate?: boolean
+        }
+      }
+    }
   }
   path: {
     sessionID: string

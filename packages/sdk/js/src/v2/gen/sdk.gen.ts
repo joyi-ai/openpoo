@@ -1648,6 +1648,30 @@ export class Session extends HeyApiClient {
       permission?: PermissionRuleset
       useWorktree?: boolean
       worktreeCleanup?: "ask" | "always" | "never"
+      mode?: {
+        id: string
+        settings?: {
+          ohMyOpenCode?: {
+            sisyphusAgent?: {
+              disabled?: boolean
+              defaultBuilderEnabled?: boolean
+              plannerEnabled?: boolean
+              replacePlan?: boolean
+            }
+            disabledAgents?: Array<string>
+            disabledHooks?: Array<string>
+            claudeCode?: {
+              mcp?: boolean
+              commands?: boolean
+              skills?: boolean
+              agents?: boolean
+              hooks?: boolean
+              plugins?: boolean
+            }
+            autoUpdate?: boolean
+          }
+        }
+      }
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -1662,6 +1686,7 @@ export class Session extends HeyApiClient {
             { in: "body", key: "permission" },
             { in: "body", key: "useWorktree" },
             { in: "body", key: "worktreeCleanup" },
+            { in: "body", key: "mode" },
           ],
         },
       ],
@@ -1772,6 +1797,30 @@ export class Session extends HeyApiClient {
       time?: {
         archived?: number
       }
+      mode?: {
+        id: string
+        settings?: {
+          ohMyOpenCode?: {
+            sisyphusAgent?: {
+              disabled?: boolean
+              defaultBuilderEnabled?: boolean
+              plannerEnabled?: boolean
+              replacePlan?: boolean
+            }
+            disabledAgents?: Array<string>
+            disabledHooks?: Array<string>
+            claudeCode?: {
+              mcp?: boolean
+              commands?: boolean
+              skills?: boolean
+              agents?: boolean
+              hooks?: boolean
+              plugins?: boolean
+            }
+            autoUpdate?: boolean
+          }
+        }
+      }
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -1784,6 +1833,7 @@ export class Session extends HeyApiClient {
             { in: "query", key: "directory" },
             { in: "body", key: "title" },
             { in: "body", key: "time" },
+            { in: "body", key: "mode" },
           ],
         },
       ],
@@ -2130,6 +2180,30 @@ export class Session extends HeyApiClient {
       variant?: string
       thinking?: boolean
       claudeCodeFlow?: boolean
+      mode?: {
+        id: string
+        settings?: {
+          ohMyOpenCode?: {
+            sisyphusAgent?: {
+              disabled?: boolean
+              defaultBuilderEnabled?: boolean
+              plannerEnabled?: boolean
+              replacePlan?: boolean
+            }
+            disabledAgents?: Array<string>
+            disabledHooks?: Array<string>
+            claudeCode?: {
+              mcp?: boolean
+              commands?: boolean
+              skills?: boolean
+              agents?: boolean
+              hooks?: boolean
+              plugins?: boolean
+            }
+            autoUpdate?: boolean
+          }
+        }
+      }
       parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
     },
     options?: Options<never, ThrowOnError>,
@@ -2150,6 +2224,7 @@ export class Session extends HeyApiClient {
             { in: "body", key: "variant" },
             { in: "body", key: "thinking" },
             { in: "body", key: "claudeCodeFlow" },
+            { in: "body", key: "mode" },
             { in: "body", key: "parts" },
           ],
         },
@@ -2252,6 +2327,30 @@ export class Session extends HeyApiClient {
       variant?: string
       thinking?: boolean
       claudeCodeFlow?: boolean
+      mode?: {
+        id: string
+        settings?: {
+          ohMyOpenCode?: {
+            sisyphusAgent?: {
+              disabled?: boolean
+              defaultBuilderEnabled?: boolean
+              plannerEnabled?: boolean
+              replacePlan?: boolean
+            }
+            disabledAgents?: Array<string>
+            disabledHooks?: Array<string>
+            claudeCode?: {
+              mcp?: boolean
+              commands?: boolean
+              skills?: boolean
+              agents?: boolean
+              hooks?: boolean
+              plugins?: boolean
+            }
+            autoUpdate?: boolean
+          }
+        }
+      }
       parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
     },
     options?: Options<never, ThrowOnError>,
@@ -2272,6 +2371,7 @@ export class Session extends HeyApiClient {
             { in: "body", key: "variant" },
             { in: "body", key: "thinking" },
             { in: "body", key: "claudeCodeFlow" },
+            { in: "body", key: "mode" },
             { in: "body", key: "parts" },
           ],
         },
@@ -2304,6 +2404,30 @@ export class Session extends HeyApiClient {
       arguments?: string
       command?: string
       variant?: string
+      mode?: {
+        id: string
+        settings?: {
+          ohMyOpenCode?: {
+            sisyphusAgent?: {
+              disabled?: boolean
+              defaultBuilderEnabled?: boolean
+              plannerEnabled?: boolean
+              replacePlan?: boolean
+            }
+            disabledAgents?: Array<string>
+            disabledHooks?: Array<string>
+            claudeCode?: {
+              mcp?: boolean
+              commands?: boolean
+              skills?: boolean
+              agents?: boolean
+              hooks?: boolean
+              plugins?: boolean
+            }
+            autoUpdate?: boolean
+          }
+        }
+      }
       parts?: Array<{
         id?: string
         type: "file"
@@ -2328,6 +2452,7 @@ export class Session extends HeyApiClient {
             { in: "body", key: "arguments" },
             { in: "body", key: "command" },
             { in: "body", key: "variant" },
+            { in: "body", key: "mode" },
             { in: "body", key: "parts" },
           ],
         },
@@ -2360,6 +2485,30 @@ export class Session extends HeyApiClient {
         modelID: string
       }
       command?: string
+      mode?: {
+        id: string
+        settings?: {
+          ohMyOpenCode?: {
+            sisyphusAgent?: {
+              disabled?: boolean
+              defaultBuilderEnabled?: boolean
+              plannerEnabled?: boolean
+              replacePlan?: boolean
+            }
+            disabledAgents?: Array<string>
+            disabledHooks?: Array<string>
+            claudeCode?: {
+              mcp?: boolean
+              commands?: boolean
+              skills?: boolean
+              agents?: boolean
+              hooks?: boolean
+              plugins?: boolean
+            }
+            autoUpdate?: boolean
+          }
+        }
+      }
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -2373,6 +2522,7 @@ export class Session extends HeyApiClient {
             { in: "body", key: "agent" },
             { in: "body", key: "model" },
             { in: "body", key: "command" },
+            { in: "body", key: "mode" },
           ],
         },
       ],

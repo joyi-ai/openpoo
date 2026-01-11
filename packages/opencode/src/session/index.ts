@@ -22,6 +22,7 @@ import { StorageSqlite } from "@/storage/sqlite"
 
 import type { Provider } from "@/provider/provider"
 import { PermissionNext } from "@/permission/next"
+import { SessionMode } from "./mode"
 
 export namespace Session {
   const log = Log.create({ service: "session" })
@@ -31,6 +32,7 @@ export namespace Session {
    */
   export function fromCacheRow(row: Cache.SessionRow | null): Session.Info | null {
     if (!row) return null
+    const data = row.data ? (JSON.parse(row.data) as { mode?: SessionMode.Info }) : undefined
     return {
       id: row.id as `session_${string}`,
       projectID: row.projectID,
@@ -56,6 +58,7 @@ export namespace Session {
         row.worktree_path && row.worktree_branch
           ? { path: row.worktree_path, branch: row.worktree_branch, cleanup: "ask" as const }
           : undefined,
+      mode: data?.mode,
     }
   }
 
@@ -108,6 +111,7 @@ export namespace Session {
           diff: z.string().optional(),
         })
         .optional(),
+      mode: SessionMode.Info.optional(),
       worktree: Worktree.Info.optional(),
     })
     .meta({
@@ -168,6 +172,7 @@ export namespace Session {
         permission: Info.shape.permission,
         useWorktree: z.boolean().optional(),
         worktreeCleanup: Worktree.CleanupMode.optional(),
+        mode: SessionMode.Info.optional(),
       })
       .optional(),
     async (input) => {
@@ -178,6 +183,7 @@ export namespace Session {
         permission: input?.permission,
         useWorktree: input?.useWorktree,
         worktreeCleanup: input?.worktreeCleanup,
+        mode: input?.mode,
       })
     },
   )
@@ -190,10 +196,12 @@ export namespace Session {
       worktreeCleanup: Worktree.CleanupMode.optional(),
     }),
     async (input) => {
+      const parent = await get(input.sessionID)
       const session = await createNext({
         directory: Instance.directory,
         useWorktree: input.useWorktree,
         worktreeCleanup: input.worktreeCleanup,
+        mode: parent.mode,
       })
       const msgs = await messages({ sessionID: input.sessionID })
       const idMap = new Map<string, string>()
@@ -238,10 +246,12 @@ export namespace Session {
     permission?: PermissionNext.Ruleset
     useWorktree?: boolean
     worktreeCleanup?: Worktree.CleanupMode
+    mode?: SessionMode.Info
   }) {
     const sessionId = Identifier.descending("session", input.id)
     let worktreeInfo: Worktree.Info | undefined
     let sessionDirectory = input.directory
+    const mode = SessionMode.normalize(input.mode)
 
     // Create worktree if requested and project is git-managed
     if (input.useWorktree && Instance.project.vcs === "git") {
@@ -266,6 +276,7 @@ export namespace Session {
       parentID: input.parentID,
       title: input.title ?? createDefaultTitle(!!input.parentID),
       permission: input.permission,
+      mode,
       worktree: worktreeInfo,
       time: {
         created: Date.now(),
@@ -274,6 +285,7 @@ export namespace Session {
     }
     log.info("created", result)
     await Storage.write(["session", Instance.project.id, result.id], result)
+    SessionMode.set(result.id, result.mode)
 
     // Update cache
     Cache.Session.upsert({
@@ -289,6 +301,7 @@ export namespace Session {
         archived: result.time.archived,
       },
       worktree: result.worktree,
+      data: result.mode ? { mode: result.mode } : undefined,
     })
 
     Bus.publish(Event.Created, {
@@ -375,7 +388,9 @@ export namespace Session {
         : undefined,
       share: result.share,
       worktree: result.worktree,
+      data: result.mode ? { mode: result.mode } : undefined,
     })
+    SessionMode.set(result.id, result.mode)
 
     Bus.publish(Event.Updated, {
       info: result,
@@ -492,6 +507,9 @@ export namespace Session {
 
         // Delete from cache transactionally (ACID)
         Cache.Session.removeMany(allSessionIDs)
+        for (const sid of allSessionIDs) {
+          SessionMode.clear(sid)
+        }
 
         // Delete files (best effort, log failures)
         for (const sid of allSessionIDs) {

@@ -47,6 +47,7 @@ import { TuiEvent } from "@/cli/cmd/tui/event"
 import { Snapshot } from "@/snapshot"
 import { SessionSummary } from "@/session/summary"
 import { SessionStatus } from "@/session/status"
+import { SessionMode } from "@/session/mode"
 import { upgradeWebSocket, websocket } from "hono/bun"
 import { errors } from "./error"
 import { Pty } from "@/pty"
@@ -1199,27 +1200,32 @@ export namespace Server {
               sessionID: Identifier.schema("session"),
             }),
           ),
-          validator(
-            "json",
-            z.object({
-              title: z.string().optional(),
-              time: z
-                .object({
-                  archived: z.number().optional(),
-                })
-                .optional(),
-            }),
-          ),
-          async (c) => {
-            const sessionID = c.req.valid("param").sessionID
-            const updates = c.req.valid("json")
+            validator(
+              "json",
+              z.object({
+                title: z.string().optional(),
+                time: z
+                  .object({
+                    archived: z.number().optional(),
+                  })
+                  .optional(),
+                mode: SessionMode.Info.optional(),
+              }),
+            ),
+            async (c) => {
+              const sessionID = c.req.valid("param").sessionID
+              const updates = c.req.valid("json")
 
             const updatedSession = await Session.update(sessionID, (session) => {
-              if (updates.title !== undefined) {
-                session.title = updates.title
-              }
-              if (updates.time?.archived !== undefined) session.time.archived = updates.time.archived
-            })
+                if (updates.title !== undefined) {
+                  session.title = updates.title
+                }
+                if (updates.time?.archived !== undefined) session.time.archived = updates.time.archived
+                if (updates.mode !== undefined) {
+                  const nextMode = SessionMode.normalize(updates.mode) ?? updates.mode
+                  session.mode = nextMode
+                }
+              })
 
             return c.json(updatedSession)
           },

@@ -27,7 +27,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["healthy", "version"]
+                  "required": [
+                    "healthy",
+                    "version"
+                  ]
                 }
               }
             }
@@ -471,7 +474,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["id"]
+                "required": [
+                  "id"
+                ]
               }
             }
           }
@@ -540,7 +545,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["id"]
+                "required": [
+                  "id"
+                ]
               }
             }
           }
@@ -609,7 +616,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["id"]
+                "required": [
+                  "id"
+                ]
               }
             }
           }
@@ -678,7 +687,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["id"]
+                "required": [
+                  "id"
+                ]
               }
             }
           }
@@ -731,7 +742,12 @@
                         "type": "string"
                       }
                     },
-                    "required": ["pluginId", "pluginName", "name", "fullName"]
+                    "required": [
+                      "pluginId",
+                      "pluginName",
+                      "name",
+                      "fullName"
+                    ]
                   }
                 }
               }
@@ -786,7 +802,12 @@
                         "type": "string"
                       }
                     },
-                    "required": ["pluginId", "pluginName", "name", "fullName"]
+                    "required": [
+                      "pluginId",
+                      "pluginName",
+                      "name",
+                      "fullName"
+                    ]
                   }
                 }
               }
@@ -878,7 +899,11 @@
                         "type": "string"
                       }
                     },
-                    "required": ["name", "downloads", "stars"]
+                    "required": [
+                      "name",
+                      "downloads",
+                      "stars"
+                    ]
                   }
                 }
               }
@@ -998,7 +1023,9 @@
                     }
                   }
                 },
-                "required": ["answers"]
+                "required": [
+                  "answers"
+                ]
               }
             }
           }
@@ -1100,7 +1127,10 @@
                     },
                     "body": {}
                   },
-                  "required": ["path", "body"]
+                  "required": [
+                    "path",
+                    "body"
+                  ]
                 }
               }
             }
@@ -1382,7 +1412,10 @@
                         "type": "number"
                       }
                     },
-                    "required": ["rows", "cols"]
+                    "required": [
+                      "rows",
+                      "cols"
+                    ]
                   }
                 }
               }
@@ -1618,7 +1651,11 @@
                         "type": "string"
                       }
                     },
-                    "required": ["name", "description", "location"]
+                    "required": [
+                      "name",
+                      "description",
+                      "location"
+                    ]
                   }
                 }
               }
@@ -2043,7 +2080,87 @@
                   },
                   "worktreeCleanup": {
                     "type": "string",
-                    "enum": ["ask", "always", "never"]
+                    "enum": [
+                      "ask",
+                      "always",
+                      "never"
+                    ]
+                  },
+                  "mode": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "ohMyOpenCode": {
+                            "type": "object",
+                            "properties": {
+                              "sisyphusAgent": {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "boolean"
+                                  },
+                                  "defaultBuilderEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "plannerEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "replacePlan": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "disabledAgents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "disabledHooks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "claudeCode": {
+                                "type": "object",
+                                "properties": {
+                                  "mcp": {
+                                    "type": "boolean"
+                                  },
+                                  "commands": {
+                                    "type": "boolean"
+                                  },
+                                  "skills": {
+                                    "type": "boolean"
+                                  },
+                                  "agents": {
+                                    "type": "boolean"
+                                  },
+                                  "hooks": {
+                                    "type": "boolean"
+                                  },
+                                  "plugins": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "autoUpdate": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
                   }
                 }
               }
@@ -2131,7 +2248,9 @@
         ],
         "summary": "Get session",
         "description": "Retrieve detailed information about a specific OpenCode session.",
-        "tags": ["Session"],
+        "tags": [
+          "Session"
+        ],
         "responses": {
           "200": {
             "description": "Get session",
@@ -2309,6 +2428,82 @@
                         "type": "number"
                       }
                     }
+                  },
+                  "mode": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "ohMyOpenCode": {
+                            "type": "object",
+                            "properties": {
+                              "sisyphusAgent": {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "boolean"
+                                  },
+                                  "defaultBuilderEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "plannerEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "replacePlan": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "disabledAgents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "disabledHooks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "claudeCode": {
+                                "type": "object",
+                                "properties": {
+                                  "mcp": {
+                                    "type": "boolean"
+                                  },
+                                  "commands": {
+                                    "type": "boolean"
+                                  },
+                                  "skills": {
+                                    "type": "boolean"
+                                  },
+                                  "agents": {
+                                    "type": "boolean"
+                                  },
+                                  "hooks": {
+                                    "type": "boolean"
+                                  },
+                                  "plugins": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "autoUpdate": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
                   }
                 }
               }
@@ -2345,7 +2540,9 @@
           }
         ],
         "summary": "Get session children",
-        "tags": ["Session"],
+        "tags": [
+          "Session"
+        ],
         "description": "Retrieve all child sessions that were forked from the specified parent session.",
         "responses": {
           "200": {
@@ -2528,7 +2725,11 @@
                     "pattern": "^msg.*"
                   }
                 },
-                "required": ["modelID", "providerID", "messageID"]
+                "required": [
+                  "modelID",
+                  "providerID",
+                  "messageID"
+                ]
               }
             }
           }
@@ -2591,7 +2792,11 @@
                   },
                   "worktreeCleanup": {
                     "type": "string",
-                    "enum": ["ask", "always", "never"]
+                    "enum": [
+                      "ask",
+                      "always",
+                      "never"
+                    ]
                   }
                 }
               }
@@ -2919,7 +3124,10 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["providerID", "modelID"]
+                "required": [
+                  "providerID",
+                  "modelID"
+                ]
               }
             }
           }
@@ -2958,6 +3166,14 @@
             "schema": {
               "type": "number"
             }
+          },
+          {
+            "in": "query",
+            "name": "afterID",
+            "schema": {
+              "type": "string",
+              "pattern": "^msg.*"
+            }
           }
         ],
         "summary": "Get session messages",
@@ -2982,7 +3198,10 @@
                         }
                       }
                     },
-                    "required": ["info", "parts"]
+                    "required": [
+                      "info",
+                      "parts"
+                    ]
                   }
                 }
               }
@@ -3056,7 +3275,10 @@
                       }
                     }
                   },
-                  "required": ["info", "parts"]
+                  "required": [
+                    "info",
+                    "parts"
+                  ]
                 }
               }
             }
@@ -3102,7 +3324,10 @@
                         "type": "string"
                       }
                     },
-                    "required": ["providerID", "modelID"]
+                    "required": [
+                      "providerID",
+                      "modelID"
+                    ]
                   },
                   "agent": {
                     "type": "string"
@@ -3132,6 +3357,82 @@
                   "claudeCodeFlow": {
                     "type": "boolean"
                   },
+                  "mode": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "ohMyOpenCode": {
+                            "type": "object",
+                            "properties": {
+                              "sisyphusAgent": {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "boolean"
+                                  },
+                                  "defaultBuilderEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "plannerEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "replacePlan": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "disabledAgents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "disabledHooks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "claudeCode": {
+                                "type": "object",
+                                "properties": {
+                                  "mcp": {
+                                    "type": "boolean"
+                                  },
+                                  "commands": {
+                                    "type": "boolean"
+                                  },
+                                  "skills": {
+                                    "type": "boolean"
+                                  },
+                                  "agents": {
+                                    "type": "boolean"
+                                  },
+                                  "hooks": {
+                                    "type": "boolean"
+                                  },
+                                  "plugins": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "autoUpdate": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  },
                   "parts": {
                     "type": "array",
                     "items": {
@@ -3152,7 +3453,9 @@
                     }
                   }
                 },
-                "required": ["parts"]
+                "required": [
+                  "parts"
+                ]
               }
             }
           }
@@ -3281,7 +3584,10 @@
                       }
                     }
                   },
-                  "required": ["info", "parts"]
+                  "required": [
+                    "info",
+                    "parts"
+                  ]
                 }
               }
             }
@@ -3550,7 +3856,10 @@
                         "type": "string"
                       }
                     },
-                    "required": ["providerID", "modelID"]
+                    "required": [
+                      "providerID",
+                      "modelID"
+                    ]
                   },
                   "agent": {
                     "type": "string"
@@ -3580,6 +3889,82 @@
                   "claudeCodeFlow": {
                     "type": "boolean"
                   },
+                  "mode": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "ohMyOpenCode": {
+                            "type": "object",
+                            "properties": {
+                              "sisyphusAgent": {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "boolean"
+                                  },
+                                  "defaultBuilderEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "plannerEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "replacePlan": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "disabledAgents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "disabledHooks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "claudeCode": {
+                                "type": "object",
+                                "properties": {
+                                  "mcp": {
+                                    "type": "boolean"
+                                  },
+                                  "commands": {
+                                    "type": "boolean"
+                                  },
+                                  "skills": {
+                                    "type": "boolean"
+                                  },
+                                  "agents": {
+                                    "type": "boolean"
+                                  },
+                                  "hooks": {
+                                    "type": "boolean"
+                                  },
+                                  "plugins": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "autoUpdate": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  },
                   "parts": {
                     "type": "array",
                     "items": {
@@ -3600,7 +3985,9 @@
                     }
                   }
                 },
-                "required": ["parts"]
+                "required": [
+                  "parts"
+                ]
               }
             }
           }
@@ -3654,7 +4041,10 @@
                       }
                     }
                   },
-                  "required": ["info", "parts"]
+                  "required": [
+                    "info",
+                    "parts"
+                  ]
                 }
               }
             }
@@ -3705,6 +4095,82 @@
                   "variant": {
                     "type": "string"
                   },
+                  "mode": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "ohMyOpenCode": {
+                            "type": "object",
+                            "properties": {
+                              "sisyphusAgent": {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "boolean"
+                                  },
+                                  "defaultBuilderEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "plannerEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "replacePlan": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "disabledAgents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "disabledHooks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "claudeCode": {
+                                "type": "object",
+                                "properties": {
+                                  "mcp": {
+                                    "type": "boolean"
+                                  },
+                                  "commands": {
+                                    "type": "boolean"
+                                  },
+                                  "skills": {
+                                    "type": "boolean"
+                                  },
+                                  "agents": {
+                                    "type": "boolean"
+                                  },
+                                  "hooks": {
+                                    "type": "boolean"
+                                  },
+                                  "plugins": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "autoUpdate": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
+                  },
                   "parts": {
                     "type": "array",
                     "items": {
@@ -3732,13 +4198,20 @@
                               "$ref": "#/components/schemas/FilePartSource"
                             }
                           },
-                          "required": ["type", "mime", "url"]
+                          "required": [
+                            "type",
+                            "mime",
+                            "url"
+                          ]
                         }
                       ]
                     }
                   }
                 },
-                "required": ["arguments", "command"]
+                "required": [
+                  "arguments",
+                  "command"
+                ]
               }
             }
           }
@@ -3825,13 +4298,95 @@
                         "type": "string"
                       }
                     },
-                    "required": ["providerID", "modelID"]
+                    "required": [
+                      "providerID",
+                      "modelID"
+                    ]
                   },
                   "command": {
                     "type": "string"
+                  },
+                  "mode": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "settings": {
+                        "type": "object",
+                        "properties": {
+                          "ohMyOpenCode": {
+                            "type": "object",
+                            "properties": {
+                              "sisyphusAgent": {
+                                "type": "object",
+                                "properties": {
+                                  "disabled": {
+                                    "type": "boolean"
+                                  },
+                                  "defaultBuilderEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "plannerEnabled": {
+                                    "type": "boolean"
+                                  },
+                                  "replacePlan": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "disabledAgents": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "disabledHooks": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "claudeCode": {
+                                "type": "object",
+                                "properties": {
+                                  "mcp": {
+                                    "type": "boolean"
+                                  },
+                                  "commands": {
+                                    "type": "boolean"
+                                  },
+                                  "skills": {
+                                    "type": "boolean"
+                                  },
+                                  "agents": {
+                                    "type": "boolean"
+                                  },
+                                  "hooks": {
+                                    "type": "boolean"
+                                  },
+                                  "plugins": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "autoUpdate": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ]
                   }
                 },
-                "required": ["agent", "command"]
+                "required": [
+                  "agent",
+                  "command"
+                ]
               }
             }
           }
@@ -3914,7 +4469,9 @@
                     "pattern": "^prt.*"
                   }
                 },
-                "required": ["messageID"]
+                "required": [
+                  "messageID"
+                ]
               }
             }
           }
@@ -4029,10 +4586,16 @@
                     },
                     "cleanup": {
                       "type": "string",
-                      "enum": ["ask", "always", "never"]
+                      "enum": [
+                        "ask",
+                        "always",
+                        "never"
+                      ]
                     }
                   },
-                  "required": ["exists"]
+                  "required": [
+                    "exists"
+                  ]
                 }
               }
             }
@@ -4199,10 +4762,16 @@
                 "properties": {
                   "response": {
                     "type": "string",
-                    "enum": ["once", "always", "reject"]
+                    "enum": [
+                      "once",
+                      "always",
+                      "reject"
+                    ]
                   }
                 },
-                "required": ["response"]
+                "required": [
+                  "response"
+                ]
               }
             }
           }
@@ -4277,10 +4846,16 @@
                 "properties": {
                   "reply": {
                     "type": "string",
-                    "enum": ["once", "always", "reject"]
+                    "enum": [
+                      "once",
+                      "always",
+                      "reject"
+                    ]
                   }
                 },
-                "required": ["reply"]
+                "required": [
+                  "reply"
+                ]
               }
             }
           }
@@ -4400,7 +4975,9 @@
                     }
                   }
                 },
-                "required": ["answers"]
+                "required": [
+                  "answers"
+                ]
               }
             }
           }
@@ -4473,18 +5050,32 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": ["label", "description"]
+                                "required": [
+                                  "label",
+                                  "description"
+                                ]
                               }
                             },
                             "multiSelect": {
                               "type": "boolean"
                             }
                           },
-                          "required": ["question", "header", "options", "multiSelect"]
+                          "required": [
+                            "question",
+                            "header",
+                            "options",
+                            "multiSelect"
+                          ]
                         }
                       }
                     },
-                    "required": ["id", "sessionID", "messageID", "callID", "questions"]
+                    "required": [
+                      "id",
+                      "sessionID",
+                      "messageID",
+                      "callID",
+                      "questions"
+                    ]
                   }
                 }
               }
@@ -4568,18 +5159,32 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": ["label", "description"]
+                                "required": [
+                                  "label",
+                                  "description"
+                                ]
                               }
                             },
                             "multiSelect": {
                               "type": "boolean"
                             }
                           },
-                          "required": ["question", "header", "options", "multiSelect"]
+                          "required": [
+                            "question",
+                            "header",
+                            "options",
+                            "multiSelect"
+                          ]
                         }
                       }
                     },
-                    "required": ["id", "sessionID", "messageID", "callID", "questions"]
+                    "required": [
+                      "id",
+                      "sessionID",
+                      "messageID",
+                      "callID",
+                      "questions"
+                    ]
                   }
                 }
               }
@@ -4658,7 +5263,9 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["approved"]
+                "required": [
+                  "approved"
+                ]
               }
             }
           }
@@ -4712,7 +5319,13 @@
                         "type": "string"
                       }
                     },
-                    "required": ["id", "sessionID", "messageID", "callID", "plan"]
+                    "required": [
+                      "id",
+                      "sessionID",
+                      "messageID",
+                      "callID",
+                      "plan"
+                    ]
                   }
                 }
               }
@@ -4777,7 +5390,13 @@
                         "type": "string"
                       }
                     },
-                    "required": ["id", "sessionID", "messageID", "callID", "plan"]
+                    "required": [
+                      "id",
+                      "sessionID",
+                      "messageID",
+                      "callID",
+                      "plan"
+                    ]
                   }
                 }
               }
@@ -4867,7 +5486,10 @@
                       }
                     }
                   },
-                  "required": ["providers", "default"]
+                  "required": [
+                    "providers",
+                    "default"
+                  ]
                 }
               }
             }
@@ -4969,10 +5591,15 @@
                                       "properties": {
                                         "field": {
                                           "type": "string",
-                                          "enum": ["reasoning_content", "reasoning_details"]
+                                          "enum": [
+                                            "reasoning_content",
+                                            "reasoning_details"
+                                          ]
                                         }
                                       },
-                                      "required": ["field"],
+                                      "required": [
+                                        "field"
+                                      ],
                                       "additionalProperties": false
                                     }
                                   ]
@@ -5008,10 +5635,16 @@
                                           "type": "number"
                                         }
                                       },
-                                      "required": ["input", "output"]
+                                      "required": [
+                                        "input",
+                                        "output"
+                                      ]
                                     }
                                   },
-                                  "required": ["input", "output"]
+                                  "required": [
+                                    "input",
+                                    "output"
+                                  ]
                                 },
                                 "limit": {
                                   "type": "object",
@@ -5023,7 +5656,10 @@
                                       "type": "number"
                                     }
                                   },
-                                  "required": ["context", "output"]
+                                  "required": [
+                                    "context",
+                                    "output"
+                                  ]
                                 },
                                 "modalities": {
                                   "type": "object",
@@ -5032,25 +5668,44 @@
                                       "type": "array",
                                       "items": {
                                         "type": "string",
-                                        "enum": ["text", "audio", "image", "video", "pdf"]
+                                        "enum": [
+                                          "text",
+                                          "audio",
+                                          "image",
+                                          "video",
+                                          "pdf"
+                                        ]
                                       }
                                     },
                                     "output": {
                                       "type": "array",
                                       "items": {
                                         "type": "string",
-                                        "enum": ["text", "audio", "image", "video", "pdf"]
+                                        "enum": [
+                                          "text",
+                                          "audio",
+                                          "image",
+                                          "video",
+                                          "pdf"
+                                        ]
                                       }
                                     }
                                   },
-                                  "required": ["input", "output"]
+                                  "required": [
+                                    "input",
+                                    "output"
+                                  ]
                                 },
                                 "experimental": {
                                   "type": "boolean"
                                 },
                                 "status": {
                                   "type": "string",
-                                  "enum": ["alpha", "beta", "deprecated"]
+                                  "enum": [
+                                    "alpha",
+                                    "beta",
+                                    "deprecated"
+                                  ]
                                 },
                                 "options": {
                                   "type": "object",
@@ -5075,7 +5730,9 @@
                                       "type": "string"
                                     }
                                   },
-                                  "required": ["npm"]
+                                  "required": [
+                                    "npm"
+                                  ]
                                 },
                                 "variants": {
                                   "type": "object",
@@ -5105,7 +5762,12 @@
                             }
                           }
                         },
-                        "required": ["name", "env", "id", "models"]
+                        "required": [
+                          "name",
+                          "env",
+                          "id",
+                          "models"
+                        ]
                       }
                     },
                     "default": {
@@ -5124,7 +5786,11 @@
                       }
                     }
                   },
-                  "required": ["all", "default", "connected"]
+                  "required": [
+                    "all",
+                    "default",
+                    "connected"
+                  ]
                 }
               }
             }
@@ -5237,7 +5903,9 @@
                     "type": "number"
                   }
                 },
-                "required": ["method"]
+                "required": [
+                  "method"
+                ]
               }
             }
           }
@@ -5310,7 +5978,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["method"]
+                "required": [
+                  "method"
+                ]
               }
             }
           }
@@ -5362,7 +6032,9 @@
                             "type": "string"
                           }
                         },
-                        "required": ["text"]
+                        "required": [
+                          "text"
+                        ]
                       },
                       "lines": {
                         "type": "object",
@@ -5371,7 +6043,9 @@
                             "type": "string"
                           }
                         },
-                        "required": ["text"]
+                        "required": [
+                          "text"
+                        ]
                       },
                       "line_number": {
                         "type": "number"
@@ -5391,7 +6065,9 @@
                                   "type": "string"
                                 }
                               },
-                              "required": ["text"]
+                              "required": [
+                                "text"
+                              ]
                             },
                             "start": {
                               "type": "number"
@@ -5400,11 +6076,21 @@
                               "type": "number"
                             }
                           },
-                          "required": ["match", "start", "end"]
+                          "required": [
+                            "match",
+                            "start",
+                            "end"
+                          ]
                         }
                       }
                     },
-                    "required": ["path", "lines", "line_number", "absolute_offset", "submatches"]
+                    "required": [
+                      "path",
+                      "lines",
+                      "line_number",
+                      "absolute_offset",
+                      "submatches"
+                    ]
                   }
                 }
               }
@@ -5443,7 +6129,10 @@
             "name": "dirs",
             "schema": {
               "type": "string",
-              "enum": ["true", "false"]
+              "enum": [
+                "true",
+                "false"
+              ]
             }
           },
           {
@@ -5451,7 +6140,10 @@
             "name": "type",
             "schema": {
               "type": "string",
-              "enum": ["file", "directory"]
+              "enum": [
+                "file",
+                "directory"
+              ]
             }
           },
           {
@@ -5707,7 +6399,12 @@
                   "level": {
                     "description": "Log level",
                     "type": "string",
-                    "enum": ["debug", "info", "error", "warn"]
+                    "enum": [
+                      "debug",
+                      "info",
+                      "error",
+                      "warn"
+                    ]
                   },
                   "message": {
                     "description": "Log message",
@@ -5722,7 +6419,11 @@
                     "additionalProperties": {}
                   }
                 },
-                "required": ["service", "level", "message"]
+                "required": [
+                  "service",
+                  "level",
+                  "message"
+                ]
               }
             }
           }
@@ -5872,7 +6573,10 @@
                     ]
                   }
                 },
-                "required": ["name", "config"]
+                "required": [
+                  "name",
+                  "config"
+                ]
               }
             }
           }
@@ -5920,7 +6624,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["authorizationUrl"]
+                  "required": [
+                    "authorizationUrl"
+                  ]
                 }
               }
             }
@@ -5987,7 +6693,9 @@
                       "const": true
                     }
                   },
-                  "required": ["success"]
+                  "required": [
+                    "success"
+                  ]
                 }
               }
             }
@@ -6076,7 +6784,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["code"]
+                "required": [
+                  "code"
+                ]
               }
             }
           }
@@ -6393,7 +7103,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["text"]
+                "required": [
+                  "text"
+                ]
               }
             }
           }
@@ -6656,7 +7368,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["command"]
+                "required": [
+                  "command"
+                ]
               }
             }
           }
@@ -6709,7 +7423,12 @@
                   },
                   "variant": {
                     "type": "string",
-                    "enum": ["info", "success", "warning", "error"]
+                    "enum": [
+                      "info",
+                      "success",
+                      "warning",
+                      "error"
+                    ]
                   },
                   "duration": {
                     "description": "Duration in milliseconds",
@@ -6717,7 +7436,10 @@
                     "type": "number"
                   }
                 },
-                "required": ["message", "variant"]
+                "required": [
+                  "message",
+                  "variant"
+                ]
               }
             }
           }
@@ -6828,10 +7550,16 @@
                   "properties": {
                     "type": {
                       "type": "string",
-                      "enum": ["api", "oauth", "wellknown"]
+                      "enum": [
+                        "api",
+                        "oauth",
+                        "wellknown"
+                      ]
                     }
                   },
-                  "required": ["type"]
+                  "required": [
+                    "type"
+                  ]
                 }
               }
             }
@@ -6948,7 +7676,10 @@
                     },
                     "data_collection": {
                       "type": "string",
-                      "enum": ["allow", "deny"]
+                      "enum": [
+                        "allow",
+                        "deny"
+                      ]
                     },
                     "only": {
                       "type": "array",
@@ -6984,7 +7715,10 @@
             "name": "providerID",
             "schema": {
               "type": "string",
-              "enum": ["openrouter", "vercel"]
+              "enum": [
+                "openrouter",
+                "vercel"
+              ]
             },
             "required": true
           }
@@ -7033,7 +7767,10 @@
                   },
                   "data_collection": {
                     "type": "string",
-                    "enum": ["allow", "deny"]
+                    "enum": [
+                      "allow",
+                      "deny"
+                    ]
                   },
                   "only": {
                     "type": "array",
@@ -7089,7 +7826,10 @@
                       }
                     }
                   },
-                  "required": ["openrouter", "vercel"]
+                  "required": [
+                    "openrouter",
+                    "vercel"
+                  ]
                 }
               }
             }
@@ -7154,10 +7894,15 @@
                 "type": "string"
               }
             },
-            "required": ["version"]
+            "required": [
+              "version"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.installation.update-available": {
         "type": "object",
@@ -7173,10 +7918,15 @@
                 "type": "string"
               }
             },
-            "required": ["version"]
+            "required": [
+              "version"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Project": {
         "type": "object",
@@ -7218,7 +7968,10 @@
                 "type": "number"
               }
             },
-            "required": ["created", "updated"]
+            "required": [
+              "created",
+              "updated"
+            ]
           },
           "sandboxes": {
             "type": "array",
@@ -7227,7 +7980,12 @@
             }
           }
         },
-        "required": ["id", "worktree", "time", "sandboxes"]
+        "required": [
+          "id",
+          "worktree",
+          "time",
+          "sandboxes"
+        ]
       },
       "Event.project.updated": {
         "type": "object",
@@ -7240,7 +7998,10 @@
             "$ref": "#/components/schemas/Project"
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.server.instance.disposed": {
         "type": "object",
@@ -7256,10 +8017,15 @@
                 "type": "string"
               }
             },
-            "required": ["directory"]
+            "required": [
+              "directory"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.lsp.client.diagnostics": {
         "type": "object",
@@ -7278,10 +8044,16 @@
                 "type": "string"
               }
             },
-            "required": ["serverID", "path"]
+            "required": [
+              "serverID",
+              "path"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.lsp.updated": {
         "type": "object",
@@ -7295,7 +8067,10 @@
             "properties": {}
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "FileDiff": {
         "type": "object",
@@ -7316,7 +8091,13 @@
             "type": "number"
           }
         },
-        "required": ["file", "before", "after", "additions", "deletions"]
+        "required": [
+          "file",
+          "before",
+          "after",
+          "additions",
+          "deletions"
+        ]
       },
       "UserMessage": {
         "type": "object",
@@ -7338,7 +8119,9 @@
                 "type": "number"
               }
             },
-            "required": ["created"]
+            "required": [
+              "created"
+            ]
           },
           "summary": {
             "type": "object",
@@ -7356,7 +8139,9 @@
                 }
               }
             },
-            "required": ["diffs"]
+            "required": [
+              "diffs"
+            ]
           },
           "agent": {
             "type": "string"
@@ -7371,7 +8156,10 @@
                 "type": "string"
               }
             },
-            "required": ["providerID", "modelID"]
+            "required": [
+              "providerID",
+              "modelID"
+            ]
           },
           "system": {
             "type": "string"
@@ -7395,7 +8183,14 @@
             "type": "boolean"
           }
         },
-        "required": ["id", "sessionID", "role", "time", "agent", "model"]
+        "required": [
+          "id",
+          "sessionID",
+          "role",
+          "time",
+          "agent",
+          "model"
+        ]
       },
       "ProviderAuthError": {
         "type": "object",
@@ -7414,10 +8209,16 @@
                 "type": "string"
               }
             },
-            "required": ["providerID", "message"]
+            "required": [
+              "providerID",
+              "message"
+            ]
           }
         },
-        "required": ["name", "data"]
+        "required": [
+          "name",
+          "data"
+        ]
       },
       "UnknownError": {
         "type": "object",
@@ -7433,10 +8234,15 @@
                 "type": "string"
               }
             },
-            "required": ["message"]
+            "required": [
+              "message"
+            ]
           }
         },
-        "required": ["name", "data"]
+        "required": [
+          "name",
+          "data"
+        ]
       },
       "MessageOutputLengthError": {
         "type": "object",
@@ -7450,7 +8256,10 @@
             "properties": {}
           }
         },
-        "required": ["name", "data"]
+        "required": [
+          "name",
+          "data"
+        ]
       },
       "MessageAbortedError": {
         "type": "object",
@@ -7466,10 +8275,15 @@
                 "type": "string"
               }
             },
-            "required": ["message"]
+            "required": [
+              "message"
+            ]
           }
         },
-        "required": ["name", "data"]
+        "required": [
+          "name",
+          "data"
+        ]
       },
       "APIError": {
         "type": "object",
@@ -7512,10 +8326,16 @@
                 }
               }
             },
-            "required": ["message", "isRetryable"]
+            "required": [
+              "message",
+              "isRetryable"
+            ]
           }
         },
-        "required": ["name", "data"]
+        "required": [
+          "name",
+          "data"
+        ]
       },
       "AssistantMessage": {
         "type": "object",
@@ -7540,7 +8360,9 @@
                 "type": "number"
               }
             },
-            "required": ["created"]
+            "required": [
+              "created"
+            ]
           },
           "error": {
             "anyOf": [
@@ -7586,7 +8408,10 @@
                 "type": "string"
               }
             },
-            "required": ["cwd", "root"]
+            "required": [
+              "cwd",
+              "root"
+            ]
           },
           "summary": {
             "type": "boolean"
@@ -7616,10 +8441,18 @@
                     "type": "number"
                   }
                 },
-                "required": ["read", "write"]
+                "required": [
+                  "read",
+                  "write"
+                ]
               }
             },
-            "required": ["input", "output", "reasoning", "cache"]
+            "required": [
+              "input",
+              "output",
+              "reasoning",
+              "cache"
+            ]
           },
           "finish": {
             "type": "string"
@@ -7664,10 +8497,15 @@
                 "$ref": "#/components/schemas/Message"
               }
             },
-            "required": ["info"]
+            "required": [
+              "info"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.message.removed": {
         "type": "object",
@@ -7686,10 +8524,16 @@
                 "type": "string"
               }
             },
-            "required": ["sessionID", "messageID"]
+            "required": [
+              "sessionID",
+              "messageID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "TextPart": {
         "type": "object",
@@ -7726,7 +8570,9 @@
                 "type": "number"
               }
             },
-            "required": ["start"]
+            "required": [
+              "start"
+            ]
           },
           "metadata": {
             "type": "object",
@@ -7736,7 +8582,13 @@
             "additionalProperties": {}
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "text"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "text"
+        ]
       },
       "ReasoningPart": {
         "type": "object",
@@ -7774,10 +8626,19 @@
                 "type": "number"
               }
             },
-            "required": ["start"]
+            "required": [
+              "start"
+            ]
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "text", "time"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "text",
+          "time"
+        ]
       },
       "FilePartSourceText": {
         "type": "object",
@@ -7796,7 +8657,11 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["value", "start", "end"]
+        "required": [
+          "value",
+          "start",
+          "end"
+        ]
       },
       "FileSource": {
         "type": "object",
@@ -7812,7 +8677,11 @@
             "type": "string"
           }
         },
-        "required": ["text", "type", "path"]
+        "required": [
+          "text",
+          "type",
+          "path"
+        ]
       },
       "Range": {
         "type": "object",
@@ -7827,7 +8696,10 @@
                 "type": "number"
               }
             },
-            "required": ["line", "character"]
+            "required": [
+              "line",
+              "character"
+            ]
           },
           "end": {
             "type": "object",
@@ -7839,10 +8711,16 @@
                 "type": "number"
               }
             },
-            "required": ["line", "character"]
+            "required": [
+              "line",
+              "character"
+            ]
           }
         },
-        "required": ["start", "end"]
+        "required": [
+          "start",
+          "end"
+        ]
       },
       "SymbolSource": {
         "type": "object",
@@ -7869,7 +8747,14 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["text", "type", "path", "range", "name", "kind"]
+        "required": [
+          "text",
+          "type",
+          "path",
+          "range",
+          "name",
+          "kind"
+        ]
       },
       "ResourceSource": {
         "type": "object",
@@ -7888,7 +8773,12 @@
             "type": "string"
           }
         },
-        "required": ["text", "type", "clientName", "uri"]
+        "required": [
+          "text",
+          "type",
+          "clientName",
+          "uri"
+        ]
       },
       "FilePartSource": {
         "anyOf": [
@@ -7932,7 +8822,14 @@
             "$ref": "#/components/schemas/FilePartSource"
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "mime", "url"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "mime",
+          "url"
+        ]
       },
       "ToolStatePending": {
         "type": "object",
@@ -7952,7 +8849,11 @@
             "type": "string"
           }
         },
-        "required": ["status", "input", "raw"]
+        "required": [
+          "status",
+          "input",
+          "raw"
+        ]
       },
       "ToolStateRunning": {
         "type": "object",
@@ -7985,10 +8886,16 @@
                 "type": "number"
               }
             },
-            "required": ["start"]
+            "required": [
+              "start"
+            ]
           }
         },
-        "required": ["status", "input", "time"]
+        "required": [
+          "status",
+          "input",
+          "time"
+        ]
       },
       "ToolStateCompleted": {
         "type": "object",
@@ -8030,7 +8937,10 @@
                 "type": "number"
               }
             },
-            "required": ["start", "end"]
+            "required": [
+              "start",
+              "end"
+            ]
           },
           "attachments": {
             "type": "array",
@@ -8039,7 +8949,14 @@
             }
           }
         },
-        "required": ["status", "input", "output", "title", "metadata", "time"]
+        "required": [
+          "status",
+          "input",
+          "output",
+          "title",
+          "metadata",
+          "time"
+        ]
       },
       "ToolStateError": {
         "type": "object",
@@ -8075,10 +8992,18 @@
                 "type": "number"
               }
             },
-            "required": ["start", "end"]
+            "required": [
+              "start",
+              "end"
+            ]
           }
         },
-        "required": ["status", "input", "error", "time"]
+        "required": [
+          "status",
+          "input",
+          "error",
+          "time"
+        ]
       },
       "ToolState": {
         "anyOf": [
@@ -8129,7 +9054,15 @@
             "additionalProperties": {}
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "callID", "tool", "state"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "callID",
+          "tool",
+          "state"
+        ]
       },
       "StepStartPart": {
         "type": "object",
@@ -8151,7 +9084,12 @@
             "type": "string"
           }
         },
-        "required": ["id", "sessionID", "messageID", "type"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type"
+        ]
       },
       "StepFinishPart": {
         "type": "object",
@@ -8200,13 +9138,29 @@
                     "type": "number"
                   }
                 },
-                "required": ["read", "write"]
+                "required": [
+                  "read",
+                  "write"
+                ]
               }
             },
-            "required": ["input", "output", "reasoning", "cache"]
+            "required": [
+              "input",
+              "output",
+              "reasoning",
+              "cache"
+            ]
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "reason", "cost", "tokens"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "reason",
+          "cost",
+          "tokens"
+        ]
       },
       "SnapshotPart": {
         "type": "object",
@@ -8228,7 +9182,13 @@
             "type": "string"
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "snapshot"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "snapshot"
+        ]
       },
       "PatchPart": {
         "type": "object",
@@ -8256,7 +9216,14 @@
             }
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "hash", "files"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "hash",
+          "files"
+        ]
       },
       "AgentPart": {
         "type": "object",
@@ -8294,10 +9261,20 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": ["value", "start", "end"]
+            "required": [
+              "value",
+              "start",
+              "end"
+            ]
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "name"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "name"
+        ]
       },
       "RetryPart": {
         "type": "object",
@@ -8328,10 +9305,20 @@
                 "type": "number"
               }
             },
-            "required": ["created"]
+            "required": [
+              "created"
+            ]
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "attempt", "error", "time"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "attempt",
+          "error",
+          "time"
+        ]
       },
       "CompactionPart": {
         "type": "object",
@@ -8353,7 +9340,13 @@
             "type": "boolean"
           }
         },
-        "required": ["id", "sessionID", "messageID", "type", "auto"]
+        "required": [
+          "id",
+          "sessionID",
+          "messageID",
+          "type",
+          "auto"
+        ]
       },
       "Part": {
         "anyOf": [
@@ -8389,7 +9382,15 @@
                 "type": "string"
               }
             },
-            "required": ["id", "sessionID", "messageID", "type", "prompt", "description", "agent"]
+            "required": [
+              "id",
+              "sessionID",
+              "messageID",
+              "type",
+              "prompt",
+              "description",
+              "agent"
+            ]
           },
           {
             "$ref": "#/components/schemas/ReasoningPart"
@@ -8440,10 +9441,15 @@
                 "type": "string"
               }
             },
-            "required": ["part"]
+            "required": [
+              "part"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.message.part.removed": {
         "type": "object",
@@ -8465,10 +9471,17 @@
                 "type": "string"
               }
             },
-            "required": ["sessionID", "messageID", "partID"]
+            "required": [
+              "sessionID",
+              "messageID",
+              "partID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.claude-plugin.loaded": {
         "type": "object",
@@ -8487,10 +9500,16 @@
                 "type": "string"
               }
             },
-            "required": ["pluginId", "pluginName"]
+            "required": [
+              "pluginId",
+              "pluginName"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.claude-plugin.unloaded": {
         "type": "object",
@@ -8506,10 +9525,15 @@
                 "type": "string"
               }
             },
-            "required": ["pluginId"]
+            "required": [
+              "pluginId"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.claude-plugin.enabled": {
         "type": "object",
@@ -8525,10 +9549,15 @@
                 "type": "string"
               }
             },
-            "required": ["pluginId"]
+            "required": [
+              "pluginId"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.claude-plugin.disabled": {
         "type": "object",
@@ -8544,10 +9573,15 @@
                 "type": "string"
               }
             },
-            "required": ["pluginId"]
+            "required": [
+              "pluginId"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "PermissionRequest": {
         "type": "object",
@@ -8592,10 +9626,20 @@
                 "type": "string"
               }
             },
-            "required": ["messageID", "callID"]
+            "required": [
+              "messageID",
+              "callID"
+            ]
           }
         },
-        "required": ["id", "sessionID", "permission", "patterns", "metadata", "always"]
+        "required": [
+          "id",
+          "sessionID",
+          "permission",
+          "patterns",
+          "metadata",
+          "always"
+        ]
       },
       "Event.permission.asked": {
         "type": "object",
@@ -8608,7 +9652,10 @@
             "$ref": "#/components/schemas/PermissionRequest"
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.permission.replied": {
         "type": "object",
@@ -8628,13 +9675,24 @@
               },
               "reply": {
                 "type": "string",
-                "enum": ["once", "always", "reject"]
+                "enum": [
+                  "once",
+                  "always",
+                  "reject"
+                ]
               }
             },
-            "required": ["sessionID", "requestID", "reply"]
+            "required": [
+              "sessionID",
+              "requestID",
+              "reply"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "SessionStatus": {
         "anyOf": [
@@ -8646,7 +9704,9 @@
                 "const": "idle"
               }
             },
-            "required": ["type"]
+            "required": [
+              "type"
+            ]
           },
           {
             "type": "object",
@@ -8665,7 +9725,12 @@
                 "type": "number"
               }
             },
-            "required": ["type", "attempt", "message", "next"]
+            "required": [
+              "type",
+              "attempt",
+              "message",
+              "next"
+            ]
           },
           {
             "type": "object",
@@ -8675,7 +9740,9 @@
                 "const": "busy"
               }
             },
-            "required": ["type"]
+            "required": [
+              "type"
+            ]
           }
         ]
       },
@@ -8696,10 +9763,16 @@
                 "$ref": "#/components/schemas/SessionStatus"
               }
             },
-            "required": ["sessionID", "status"]
+            "required": [
+              "sessionID",
+              "status"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.session.idle": {
         "type": "object",
@@ -8715,10 +9788,15 @@
                 "type": "string"
               }
             },
-            "required": ["sessionID"]
+            "required": [
+              "sessionID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "QuestionOption": {
         "type": "object",
@@ -8732,7 +9810,10 @@
             "type": "string"
           }
         },
-        "required": ["label", "description"]
+        "required": [
+          "label",
+          "description"
+        ]
       },
       "QuestionInfo": {
         "type": "object",
@@ -8758,7 +9839,11 @@
             "type": "boolean"
           }
         },
-        "required": ["question", "header", "options"]
+        "required": [
+          "question",
+          "header",
+          "options"
+        ]
       },
       "QuestionRequest": {
         "type": "object",
@@ -8788,10 +9873,17 @@
                 "type": "string"
               }
             },
-            "required": ["messageID", "callID"]
+            "required": [
+              "messageID",
+              "callID"
+            ]
           }
         },
-        "required": ["id", "sessionID", "questions"]
+        "required": [
+          "id",
+          "sessionID",
+          "questions"
+        ]
       },
       "Event.question.asked": {
         "type": "object",
@@ -8804,7 +9896,10 @@
             "$ref": "#/components/schemas/QuestionRequest"
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "QuestionAnswer": {
         "type": "array",
@@ -8835,10 +9930,17 @@
                 }
               }
             },
-            "required": ["sessionID", "requestID", "answers"]
+            "required": [
+              "sessionID",
+              "requestID",
+              "answers"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.question.rejected": {
         "type": "object",
@@ -8857,10 +9959,16 @@
                 "type": "string"
               }
             },
-            "required": ["sessionID", "requestID"]
+            "required": [
+              "sessionID",
+              "requestID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.session.compacted": {
         "type": "object",
@@ -8876,10 +9984,56 @@
                 "type": "string"
               }
             },
-            "required": ["sessionID"]
+            "required": [
+              "sessionID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
+      },
+      "Event.file.watcher.updated": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file.watcher.updated"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "event": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "add"
+                  },
+                  {
+                    "type": "string",
+                    "const": "change"
+                  },
+                  {
+                    "type": "string",
+                    "const": "unlink"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "file",
+              "event"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.file.edited": {
         "type": "object",
@@ -8895,10 +10049,15 @@
                 "type": "string"
               }
             },
-            "required": ["file"]
+            "required": [
+              "file"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Todo": {
         "type": "object",
@@ -8920,7 +10079,12 @@
             "type": "string"
           }
         },
-        "required": ["content", "status", "priority", "id"]
+        "required": [
+          "content",
+          "status",
+          "priority",
+          "id"
+        ]
       },
       "Event.todo.updated": {
         "type": "object",
@@ -8942,10 +10106,16 @@
                 }
               }
             },
-            "required": ["sessionID", "todos"]
+            "required": [
+              "sessionID",
+              "todos"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.tui.prompt.append": {
         "type": "object",
@@ -8961,10 +10131,15 @@
                 "type": "string"
               }
             },
-            "required": ["text"]
+            "required": [
+              "text"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.tui.command.execute": {
         "type": "object",
@@ -9003,10 +10178,15 @@
                 ]
               }
             },
-            "required": ["command"]
+            "required": [
+              "command"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.tui.toast.show": {
         "type": "object",
@@ -9026,7 +10206,12 @@
               },
               "variant": {
                 "type": "string",
-                "enum": ["info", "success", "warning", "error"]
+                "enum": [
+                  "info",
+                  "success",
+                  "warning",
+                  "error"
+                ]
               },
               "duration": {
                 "description": "Duration in milliseconds",
@@ -9034,10 +10219,16 @@
                 "type": "number"
               }
             },
-            "required": ["message", "variant"]
+            "required": [
+              "message",
+              "variant"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.tui.session.select": {
         "type": "object",
@@ -9055,10 +10246,15 @@
                 "pattern": "^ses"
               }
             },
-            "required": ["sessionID"]
+            "required": [
+              "sessionID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.mcp.tools.changed": {
         "type": "object",
@@ -9074,10 +10270,15 @@
                 "type": "string"
               }
             },
-            "required": ["server"]
+            "required": [
+              "server"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.command.executed": {
         "type": "object",
@@ -9104,10 +10305,18 @@
                 "pattern": "^msg.*"
               }
             },
-            "required": ["name", "sessionID", "arguments", "messageID"]
+            "required": [
+              "name",
+              "sessionID",
+              "arguments",
+              "messageID"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.askuser.asked": {
         "type": "object",
@@ -9155,21 +10364,38 @@
                             "type": "string"
                           }
                         },
-                        "required": ["label", "description"]
+                        "required": [
+                          "label",
+                          "description"
+                        ]
                       }
                     },
                     "multiSelect": {
                       "type": "boolean"
                     }
                   },
-                  "required": ["question", "header", "options", "multiSelect"]
+                  "required": [
+                    "question",
+                    "header",
+                    "options",
+                    "multiSelect"
+                  ]
                 }
               }
             },
-            "required": ["id", "sessionID", "messageID", "callID", "questions"]
+            "required": [
+              "id",
+              "sessionID",
+              "messageID",
+              "callID",
+              "questions"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.askuser.replied": {
         "type": "object",
@@ -9194,10 +10420,16 @@
                 }
               }
             },
-            "required": ["requestID", "answers"]
+            "required": [
+              "requestID",
+              "answers"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.planmode.review": {
         "type": "object",
@@ -9226,10 +10458,19 @@
                 "type": "string"
               }
             },
-            "required": ["id", "sessionID", "messageID", "callID", "plan"]
+            "required": [
+              "id",
+              "sessionID",
+              "messageID",
+              "callID",
+              "plan"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.planmode.responded": {
         "type": "object",
@@ -9248,14 +10489,24 @@
                 "type": "boolean"
               }
             },
-            "required": ["requestID", "approved"]
+            "required": [
+              "requestID",
+              "approved"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "PermissionAction": {
         "type": "string",
-        "enum": ["allow", "deny", "ask"]
+        "enum": [
+          "allow",
+          "deny",
+          "ask"
+        ]
       },
       "PermissionRule": {
         "type": "object",
@@ -9270,7 +10521,11 @@
             "$ref": "#/components/schemas/PermissionAction"
           }
         },
-        "required": ["permission", "pattern", "action"]
+        "required": [
+          "permission",
+          "pattern",
+          "action"
+        ]
       },
       "PermissionRuleset": {
         "type": "array",
@@ -9290,10 +10545,17 @@
           "cleanup": {
             "default": "ask",
             "type": "string",
-            "enum": ["ask", "always", "never"]
+            "enum": [
+              "ask",
+              "always",
+              "never"
+            ]
           }
         },
-        "required": ["path", "branch"]
+        "required": [
+          "path",
+          "branch"
+        ]
       },
       "Session": {
         "type": "object",
@@ -9331,7 +10593,11 @@
                 }
               }
             },
-            "required": ["additions", "deletions", "files"]
+            "required": [
+              "additions",
+              "deletions",
+              "files"
+            ]
           },
           "share": {
             "type": "object",
@@ -9340,7 +10606,9 @@
                 "type": "string"
               }
             },
-            "required": ["url"]
+            "required": [
+              "url"
+            ]
           },
           "title": {
             "type": "string"
@@ -9364,7 +10632,10 @@
                 "type": "number"
               }
             },
-            "required": ["created", "updated"]
+            "required": [
+              "created",
+              "updated"
+            ]
           },
           "permission": {
             "$ref": "#/components/schemas/PermissionRuleset"
@@ -9385,13 +10656,98 @@
                 "type": "string"
               }
             },
-            "required": ["messageID"]
+            "required": [
+              "messageID"
+            ]
+          },
+          "mode": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "settings": {
+                "type": "object",
+                "properties": {
+                  "ohMyOpenCode": {
+                    "type": "object",
+                    "properties": {
+                      "sisyphusAgent": {
+                        "type": "object",
+                        "properties": {
+                          "disabled": {
+                            "type": "boolean"
+                          },
+                          "defaultBuilderEnabled": {
+                            "type": "boolean"
+                          },
+                          "plannerEnabled": {
+                            "type": "boolean"
+                          },
+                          "replacePlan": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "disabledAgents": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "disabledHooks": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "claudeCode": {
+                        "type": "object",
+                        "properties": {
+                          "mcp": {
+                            "type": "boolean"
+                          },
+                          "commands": {
+                            "type": "boolean"
+                          },
+                          "skills": {
+                            "type": "boolean"
+                          },
+                          "agents": {
+                            "type": "boolean"
+                          },
+                          "hooks": {
+                            "type": "boolean"
+                          },
+                          "plugins": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "autoUpdate": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "id"
+            ]
           },
           "worktree": {
             "$ref": "#/components/schemas/WorktreeInfo"
           }
         },
-        "required": ["id", "projectID", "directory", "title", "version", "time"]
+        "required": [
+          "id",
+          "projectID",
+          "directory",
+          "title",
+          "version",
+          "time"
+        ]
       },
       "Event.session.created": {
         "type": "object",
@@ -9407,10 +10763,15 @@
                 "$ref": "#/components/schemas/Session"
               }
             },
-            "required": ["info"]
+            "required": [
+              "info"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.session.updated": {
         "type": "object",
@@ -9426,10 +10787,15 @@
                 "$ref": "#/components/schemas/Session"
               }
             },
-            "required": ["info"]
+            "required": [
+              "info"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.session.deleted": {
         "type": "object",
@@ -9445,10 +10811,15 @@
                 "$ref": "#/components/schemas/Session"
               }
             },
-            "required": ["info"]
+            "required": [
+              "info"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.session.diff": {
         "type": "object",
@@ -9470,10 +10841,16 @@
                 }
               }
             },
-            "required": ["sessionID", "diff"]
+            "required": [
+              "sessionID",
+              "diff"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.session.error": {
         "type": "object",
@@ -9510,42 +10887,10 @@
             }
           }
         },
-        "required": ["type", "properties"]
-      },
-      "Event.file.watcher.updated": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "file.watcher.updated"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "file": {
-                "type": "string"
-              },
-              "event": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "const": "add"
-                  },
-                  {
-                    "type": "string",
-                    "const": "change"
-                  },
-                  {
-                    "type": "string",
-                    "const": "unlink"
-                  }
-                ]
-              }
-            },
-            "required": ["file", "event"]
-          }
-        },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.vcs.branch.updated": {
         "type": "object",
@@ -9563,7 +10908,10 @@
             }
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Pty": {
         "type": "object",
@@ -9589,13 +10937,24 @@
           },
           "status": {
             "type": "string",
-            "enum": ["running", "exited"]
+            "enum": [
+              "running",
+              "exited"
+            ]
           },
           "pid": {
             "type": "number"
           }
         },
-        "required": ["id", "title", "command", "args", "cwd", "status", "pid"]
+        "required": [
+          "id",
+          "title",
+          "command",
+          "args",
+          "cwd",
+          "status",
+          "pid"
+        ]
       },
       "Event.pty.created": {
         "type": "object",
@@ -9611,10 +10970,15 @@
                 "$ref": "#/components/schemas/Pty"
               }
             },
-            "required": ["info"]
+            "required": [
+              "info"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.pty.updated": {
         "type": "object",
@@ -9630,10 +10994,15 @@
                 "$ref": "#/components/schemas/Pty"
               }
             },
-            "required": ["info"]
+            "required": [
+              "info"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.pty.exited": {
         "type": "object",
@@ -9653,10 +11022,16 @@
                 "type": "number"
               }
             },
-            "required": ["id", "exitCode"]
+            "required": [
+              "id",
+              "exitCode"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.pty.deleted": {
         "type": "object",
@@ -9673,10 +11048,15 @@
                 "pattern": "^pty.*"
               }
             },
-            "required": ["id"]
+            "required": [
+              "id"
+            ]
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.server.connected": {
         "type": "object",
@@ -9690,7 +11070,10 @@
             "properties": {}
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event.global.disposed": {
         "type": "object",
@@ -9704,7 +11087,10 @@
             "properties": {}
           }
         },
-        "required": ["type", "properties"]
+        "required": [
+          "type",
+          "properties"
+        ]
       },
       "Event": {
         "anyOf": [
@@ -9775,6 +11161,9 @@
             "$ref": "#/components/schemas/Event.session.compacted"
           },
           {
+            "$ref": "#/components/schemas/Event.file.watcher.updated"
+          },
+          {
             "$ref": "#/components/schemas/Event.file.edited"
           },
           {
@@ -9826,9 +11215,6 @@
             "$ref": "#/components/schemas/Event.session.error"
           },
           {
-            "$ref": "#/components/schemas/Event.file.watcher.updated"
-          },
-          {
             "$ref": "#/components/schemas/Event.vcs.branch.updated"
           },
           {
@@ -9861,7 +11247,10 @@
             "$ref": "#/components/schemas/Event"
           }
         },
-        "required": ["directory", "payload"]
+        "required": [
+          "directory",
+          "payload"
+        ]
       },
       "BadRequestError": {
         "type": "object",
@@ -9882,7 +11271,11 @@
             "const": false
           }
         },
-        "required": ["data", "errors", "success"]
+        "required": [
+          "data",
+          "errors",
+          "success"
+        ]
       },
       "NotFoundError": {
         "type": "object",
@@ -9898,10 +11291,15 @@
                 "type": "string"
               }
             },
-            "required": ["message"]
+            "required": [
+              "message"
+            ]
           }
         },
-        "required": ["name", "data"]
+        "required": [
+          "name",
+          "data"
+        ]
       },
       "ClaudePluginManifest": {
         "type": "object",
@@ -9930,7 +11328,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["name"]
+                "required": [
+                  "name"
+                ]
               },
               {
                 "type": "string"
@@ -9978,7 +11378,10 @@
             "type": "string"
           }
         },
-        "required": ["name", "version"]
+        "required": [
+          "name",
+          "version"
+        ]
       },
       "ClaudePluginLoaded": {
         "type": "object",
@@ -10031,7 +11434,10 @@
           },
           "source": {
             "type": "string",
-            "enum": ["local", "marketplace"]
+            "enum": [
+              "local",
+              "marketplace"
+            ]
           },
           "path": {
             "type": "string"
@@ -10049,7 +11455,14 @@
             "type": "number"
           }
         },
-        "required": ["id", "source", "path", "enabled", "manifest", "installedAt"]
+        "required": [
+          "id",
+          "source",
+          "path",
+          "enabled",
+          "manifest",
+          "installedAt"
+        ]
       },
       "ClaudePluginMarketplaceEntry": {
         "type": "object",
@@ -10076,7 +11489,9 @@
                 "type": "string"
               }
             },
-            "required": ["name"]
+            "required": [
+              "name"
+            ]
           },
           "source": {
             "anyOf": [
@@ -10094,7 +11509,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["source", "url"]
+                "required": [
+                  "source",
+                  "url"
+                ]
               }
             ]
           },
@@ -10161,11 +11579,16 @@
                   "type": "number"
                 }
               },
-              "required": ["command"]
+              "required": [
+                "command"
+              ]
             }
           }
         },
-        "required": ["name", "source"]
+        "required": [
+          "name",
+          "source"
+        ]
       },
       "KeybindsConfig": {
         "description": "Custom keybind configurations",
@@ -10612,7 +12035,12 @@
       "LogLevel": {
         "description": "Log level",
         "type": "string",
-        "enum": ["DEBUG", "INFO", "WARN", "ERROR"]
+        "enum": [
+          "DEBUG",
+          "INFO",
+          "WARN",
+          "ERROR"
+        ]
       },
       "ServerConfig": {
         "description": "Server configuration for opencode serve and web commands",
@@ -10644,7 +12072,11 @@
       },
       "PermissionActionConfig": {
         "type": "string",
-        "enum": ["ask", "allow", "deny"]
+        "enum": [
+          "ask",
+          "allow",
+          "deny"
+        ]
       },
       "PermissionObjectConfig": {
         "type": "object",
@@ -10768,7 +12200,11 @@
           },
           "mode": {
             "type": "string",
-            "enum": ["subagent", "primary", "all"]
+            "enum": [
+              "subagent",
+              "primary",
+              "all"
+            ]
           },
           "hidden": {
             "description": "Hide this subagent from the @ autocomplete menu (default: false, only applies to mode: subagent)",
@@ -10865,7 +12301,10 @@
             "additionalProperties": {}
           }
         },
-        "required": ["id", "name"],
+        "required": [
+          "id",
+          "name"
+        ],
         "additionalProperties": {}
       },
       "ProviderConfig": {
@@ -10932,10 +12371,15 @@
                       "properties": {
                         "field": {
                           "type": "string",
-                          "enum": ["reasoning_content", "reasoning_details"]
+                          "enum": [
+                            "reasoning_content",
+                            "reasoning_details"
+                          ]
                         }
                       },
-                      "required": ["field"],
+                      "required": [
+                        "field"
+                      ],
                       "additionalProperties": false
                     }
                   ]
@@ -10971,10 +12415,16 @@
                           "type": "number"
                         }
                       },
-                      "required": ["input", "output"]
+                      "required": [
+                        "input",
+                        "output"
+                      ]
                     }
                   },
-                  "required": ["input", "output"]
+                  "required": [
+                    "input",
+                    "output"
+                  ]
                 },
                 "limit": {
                   "type": "object",
@@ -10986,7 +12436,10 @@
                       "type": "number"
                     }
                   },
-                  "required": ["context", "output"]
+                  "required": [
+                    "context",
+                    "output"
+                  ]
                 },
                 "modalities": {
                   "type": "object",
@@ -10995,25 +12448,44 @@
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": ["text", "audio", "image", "video", "pdf"]
+                        "enum": [
+                          "text",
+                          "audio",
+                          "image",
+                          "video",
+                          "pdf"
+                        ]
                       }
                     },
                     "output": {
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": ["text", "audio", "image", "video", "pdf"]
+                        "enum": [
+                          "text",
+                          "audio",
+                          "image",
+                          "video",
+                          "pdf"
+                        ]
                       }
                     }
                   },
-                  "required": ["input", "output"]
+                  "required": [
+                    "input",
+                    "output"
+                  ]
                 },
                 "experimental": {
                   "type": "boolean"
                 },
                 "status": {
                   "type": "string",
-                  "enum": ["alpha", "beta", "deprecated"]
+                  "enum": [
+                    "alpha",
+                    "beta",
+                    "deprecated"
+                  ]
                 },
                 "options": {
                   "type": "object",
@@ -11038,7 +12510,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["npm"]
+                  "required": [
+                    "npm"
+                  ]
                 },
                 "variants": {
                   "description": "Variant-specific configuration",
@@ -11147,7 +12621,10 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["type", "command"],
+        "required": [
+          "type",
+          "command"
+        ],
         "additionalProperties": false
       },
       "McpOAuthConfig": {
@@ -11213,13 +12690,19 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["type", "url"],
+        "required": [
+          "type",
+          "url"
+        ],
         "additionalProperties": false
       },
       "LayoutConfig": {
         "description": "@deprecated Always uses stretch layout.",
         "type": "string",
-        "enum": ["auto", "stretch"]
+        "enum": [
+          "auto",
+          "stretch"
+        ]
       },
       "Config": {
         "type": "object",
@@ -11256,12 +12739,17 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["enabled"]
+                "required": [
+                  "enabled"
+                ]
               },
               "diff_style": {
                 "description": "Control diff rendering style: 'auto' adapts to terminal width, 'stacked' always shows single column",
                 "type": "string",
-                "enum": ["auto", "stacked"]
+                "enum": [
+                  "auto",
+                  "stacked"
+                ]
               }
             }
           },
@@ -11293,7 +12781,9 @@
                   "type": "boolean"
                 }
               },
-              "required": ["template"]
+              "required": [
+                "template"
+              ]
             }
           },
           "watcher": {
@@ -11329,14 +12819,22 @@
                 "description": "How to handle worktree cleanup when session is deleted",
                 "default": "ask",
                 "type": "string",
-                "enum": ["ask", "always", "never"]
+                "enum": [
+                  "ask",
+                  "always",
+                  "never"
+                ]
               }
             }
           },
           "share": {
             "description": "Control sharing behavior:'manual' allows manual sharing via commands, 'auto' enables automatic sharing, 'disabled' disables all sharing",
             "type": "string",
-            "enum": ["manual", "auto", "disabled"]
+            "enum": [
+              "manual",
+              "auto",
+              "disabled"
+            ]
           },
           "autoshare": {
             "description": "@deprecated Use 'share' field instead. Share newly created sessions automatically",
@@ -11474,7 +12972,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["enabled"],
+                  "required": [
+                    "enabled"
+                  ],
                   "additionalProperties": false
                 }
               ]
@@ -11544,7 +13044,9 @@
                           "const": true
                         }
                       },
-                      "required": ["disabled"]
+                      "required": [
+                        "disabled"
+                      ]
                     },
                     {
                       "type": "object",
@@ -11581,7 +13083,9 @@
                           "additionalProperties": {}
                         }
                       },
-                      "required": ["command"]
+                      "required": [
+                        "command"
+                      ]
                     }
                   ]
                 }
@@ -11664,7 +13168,9 @@
                             }
                           }
                         },
-                        "required": ["command"]
+                        "required": [
+                          "command"
+                        ]
                       }
                     }
                   },
@@ -11689,7 +13195,9 @@
                           }
                         }
                       },
-                      "required": ["command"]
+                      "required": [
+                        "command"
+                      ]
                     }
                   }
                 }
@@ -11748,7 +13256,11 @@
           },
           "parameters": {}
         },
-        "required": ["id", "description", "parameters"]
+        "required": [
+          "id",
+          "description",
+          "parameters"
+        ]
       },
       "ToolList": {
         "type": "array",
@@ -11775,7 +13287,13 @@
             "type": "string"
           }
         },
-        "required": ["home", "state", "config", "worktree", "directory"]
+        "required": [
+          "home",
+          "state",
+          "config",
+          "worktree",
+          "directory"
+        ]
       },
       "Worktree": {
         "type": "object",
@@ -11790,7 +13308,11 @@
             "type": "string"
           }
         },
-        "required": ["name", "branch", "directory"]
+        "required": [
+          "name",
+          "branch",
+          "directory"
+        ]
       },
       "WorktreeCreateInput": {
         "type": "object",
@@ -11810,7 +13332,9 @@
             "type": "string"
           }
         },
-        "required": ["branch"]
+        "required": [
+          "branch"
+        ]
       },
       "TextPartInput": {
         "type": "object",
@@ -11841,7 +13365,9 @@
                 "type": "number"
               }
             },
-            "required": ["start"]
+            "required": [
+              "start"
+            ]
           },
           "metadata": {
             "type": "object",
@@ -11851,7 +13377,10 @@
             "additionalProperties": {}
           }
         },
-        "required": ["type", "text"]
+        "required": [
+          "type",
+          "text"
+        ]
       },
       "FilePartInput": {
         "type": "object",
@@ -11876,7 +13405,11 @@
             "$ref": "#/components/schemas/FilePartSource"
           }
         },
-        "required": ["type", "mime", "url"]
+        "required": [
+          "type",
+          "mime",
+          "url"
+        ]
       },
       "AgentPartInput": {
         "type": "object",
@@ -11908,10 +13441,17 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": ["value", "start", "end"]
+            "required": [
+              "value",
+              "start",
+              "end"
+            ]
           }
         },
-        "required": ["type", "name"]
+        "required": [
+          "type",
+          "name"
+        ]
       },
       "SubtaskPartInput": {
         "type": "object",
@@ -11936,7 +13476,12 @@
             "type": "string"
           }
         },
-        "required": ["type", "prompt", "description", "agent"]
+        "required": [
+          "type",
+          "prompt",
+          "description",
+          "agent"
+        ]
       },
       "Command": {
         "type": "object",
@@ -11976,7 +13521,11 @@
             }
           }
         },
-        "required": ["name", "template", "hints"]
+        "required": [
+          "name",
+          "template",
+          "hints"
+        ]
       },
       "Model": {
         "type": "object",
@@ -12000,7 +13549,11 @@
                 "type": "string"
               }
             },
-            "required": ["id", "url", "npm"]
+            "required": [
+              "id",
+              "url",
+              "npm"
+            ]
           },
           "name": {
             "type": "string"
@@ -12042,7 +13595,13 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["text", "audio", "image", "video", "pdf"]
+                "required": [
+                  "text",
+                  "audio",
+                  "image",
+                  "video",
+                  "pdf"
+                ]
               },
               "output": {
                 "type": "object",
@@ -12063,7 +13622,13 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["text", "audio", "image", "video", "pdf"]
+                "required": [
+                  "text",
+                  "audio",
+                  "image",
+                  "video",
+                  "pdf"
+                ]
               },
               "interleaved": {
                 "anyOf": [
@@ -12075,15 +13640,28 @@
                     "properties": {
                       "field": {
                         "type": "string",
-                        "enum": ["reasoning_content", "reasoning_details"]
+                        "enum": [
+                          "reasoning_content",
+                          "reasoning_details"
+                        ]
                       }
                     },
-                    "required": ["field"]
+                    "required": [
+                      "field"
+                    ]
                   }
                 ]
               }
             },
-            "required": ["temperature", "reasoning", "attachment", "toolcall", "input", "output", "interleaved"]
+            "required": [
+              "temperature",
+              "reasoning",
+              "attachment",
+              "toolcall",
+              "input",
+              "output",
+              "interleaved"
+            ]
           },
           "cost": {
             "type": "object",
@@ -12104,7 +13682,10 @@
                     "type": "number"
                   }
                 },
-                "required": ["read", "write"]
+                "required": [
+                  "read",
+                  "write"
+                ]
               },
               "experimentalOver200K": {
                 "type": "object",
@@ -12125,13 +13706,24 @@
                         "type": "number"
                       }
                     },
-                    "required": ["read", "write"]
+                    "required": [
+                      "read",
+                      "write"
+                    ]
                   }
                 },
-                "required": ["input", "output", "cache"]
+                "required": [
+                  "input",
+                  "output",
+                  "cache"
+                ]
               }
             },
-            "required": ["input", "output", "cache"]
+            "required": [
+              "input",
+              "output",
+              "cache"
+            ]
           },
           "limit": {
             "type": "object",
@@ -12143,11 +13735,19 @@
                 "type": "number"
               }
             },
-            "required": ["context", "output"]
+            "required": [
+              "context",
+              "output"
+            ]
           },
           "status": {
             "type": "string",
-            "enum": ["alpha", "beta", "deprecated", "active"]
+            "enum": [
+              "alpha",
+              "beta",
+              "deprecated",
+              "active"
+            ]
           },
           "options": {
             "type": "object",
@@ -12207,7 +13807,12 @@
           },
           "source": {
             "type": "string",
-            "enum": ["env", "config", "custom", "api"]
+            "enum": [
+              "env",
+              "config",
+              "custom",
+              "api"
+            ]
           },
           "env": {
             "type": "array",
@@ -12235,7 +13840,14 @@
             }
           }
         },
-        "required": ["id", "name", "source", "env", "options", "models"]
+        "required": [
+          "id",
+          "name",
+          "source",
+          "env",
+          "options",
+          "models"
+        ]
       },
       "ProviderAuthMethod": {
         "type": "object",
@@ -12256,7 +13868,10 @@
             "type": "string"
           }
         },
-        "required": ["type", "label"]
+        "required": [
+          "type",
+          "label"
+        ]
       },
       "ProviderAuthAuthorization": {
         "type": "object",
@@ -12280,7 +13895,11 @@
             "type": "string"
           }
         },
-        "required": ["url", "method", "instructions"]
+        "required": [
+          "url",
+          "method",
+          "instructions"
+        ]
       },
       "Symbol": {
         "type": "object",
@@ -12301,10 +13920,17 @@
                 "$ref": "#/components/schemas/Range"
               }
             },
-            "required": ["uri", "range"]
+            "required": [
+              "uri",
+              "range"
+            ]
           }
         },
-        "required": ["name", "kind", "location"]
+        "required": [
+          "name",
+          "kind",
+          "location"
+        ]
       },
       "FileNode": {
         "type": "object",
@@ -12320,13 +13946,22 @@
           },
           "type": {
             "type": "string",
-            "enum": ["file", "directory"]
+            "enum": [
+              "file",
+              "directory"
+            ]
           },
           "ignored": {
             "type": "boolean"
           }
         },
-        "required": ["name", "path", "absolute", "type", "ignored"]
+        "required": [
+          "name",
+          "path",
+          "absolute",
+          "type",
+          "ignored"
+        ]
       },
       "FileContent": {
         "type": "object",
@@ -12380,14 +14015,24 @@
                       }
                     }
                   },
-                  "required": ["oldStart", "oldLines", "newStart", "newLines", "lines"]
+                  "required": [
+                    "oldStart",
+                    "oldLines",
+                    "newStart",
+                    "newLines",
+                    "lines"
+                  ]
                 }
               },
               "index": {
                 "type": "string"
               }
             },
-            "required": ["oldFileName", "newFileName", "hunks"]
+            "required": [
+              "oldFileName",
+              "newFileName",
+              "hunks"
+            ]
           },
           "encoding": {
             "type": "string",
@@ -12397,7 +14042,10 @@
             "type": "string"
           }
         },
-        "required": ["type", "content"]
+        "required": [
+          "type",
+          "content"
+        ]
       },
       "File": {
         "type": "object",
@@ -12417,10 +14065,19 @@
           },
           "status": {
             "type": "string",
-            "enum": ["added", "deleted", "modified"]
+            "enum": [
+              "added",
+              "deleted",
+              "modified"
+            ]
           }
         },
-        "required": ["path", "added", "removed", "status"]
+        "required": [
+          "path",
+          "added",
+          "removed",
+          "status"
+        ]
       },
       "Agent": {
         "type": "object",
@@ -12433,7 +14090,11 @@
           },
           "mode": {
             "type": "string",
-            "enum": ["subagent", "primary", "all"]
+            "enum": [
+              "subagent",
+              "primary",
+              "all"
+            ]
           },
           "native": {
             "type": "boolean"
@@ -12463,7 +14124,10 @@
                 "type": "string"
               }
             },
-            "required": ["modelID", "providerID"]
+            "required": [
+              "modelID",
+              "providerID"
+            ]
           },
           "prompt": {
             "type": "string"
@@ -12481,7 +14145,12 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["name", "mode", "permission", "options"]
+        "required": [
+          "name",
+          "mode",
+          "permission",
+          "options"
+        ]
       },
       "MCPStatusConnected": {
         "type": "object",
@@ -12491,7 +14160,9 @@
             "const": "connected"
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "MCPStatusDisabled": {
         "type": "object",
@@ -12501,7 +14172,9 @@
             "const": "disabled"
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "MCPStatusFailed": {
         "type": "object",
@@ -12514,7 +14187,10 @@
             "type": "string"
           }
         },
-        "required": ["status", "error"]
+        "required": [
+          "status",
+          "error"
+        ]
       },
       "MCPStatusNeedsAuth": {
         "type": "object",
@@ -12524,7 +14200,9 @@
             "const": "needs_auth"
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "MCPStatusNeedsClientRegistration": {
         "type": "object",
@@ -12537,7 +14215,10 @@
             "type": "string"
           }
         },
-        "required": ["status", "error"]
+        "required": [
+          "status",
+          "error"
+        ]
       },
       "MCPStatus": {
         "anyOf": [
@@ -12577,7 +14258,11 @@
             "type": "string"
           }
         },
-        "required": ["name", "uri", "client"]
+        "required": [
+          "name",
+          "uri",
+          "client"
+        ]
       },
       "LSPStatus": {
         "type": "object",
@@ -12604,7 +14289,12 @@
             ]
           }
         },
-        "required": ["id", "name", "root", "status"]
+        "required": [
+          "id",
+          "name",
+          "root",
+          "status"
+        ]
       },
       "FormatterStatus": {
         "type": "object",
@@ -12622,7 +14312,11 @@
             "type": "boolean"
           }
         },
-        "required": ["name", "extensions", "enabled"]
+        "required": [
+          "name",
+          "extensions",
+          "enabled"
+        ]
       },
       "OAuth": {
         "type": "object",
@@ -12644,7 +14338,12 @@
             "type": "string"
           }
         },
-        "required": ["type", "refresh", "access", "expires"]
+        "required": [
+          "type",
+          "refresh",
+          "access",
+          "expires"
+        ]
       },
       "ApiAuth": {
         "type": "object",
@@ -12657,7 +14356,10 @@
             "type": "string"
           }
         },
-        "required": ["type", "key"]
+        "required": [
+          "type",
+          "key"
+        ]
       },
       "WellKnownAuth": {
         "type": "object",
@@ -12673,7 +14375,11 @@
             "type": "string"
           }
         },
-        "required": ["type", "key", "token"]
+        "required": [
+          "type",
+          "key",
+          "token"
+        ]
       },
       "Auth": {
         "anyOf": [
