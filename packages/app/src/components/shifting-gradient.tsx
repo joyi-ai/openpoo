@@ -92,7 +92,7 @@ function readPalette(mode: "light" | "dark", relative = false): RGB[] {
       "--surface-warning-strong",
       "--surface-brand-base",
     ]
-    const strength = mode === "dark" ? 0.22 : 0.28
+    const strength = mode === "dark" ? 0.35 : 0.4
     return tokens.map((token) => {
       const color = parseColor(root.getPropertyValue(token)) ?? fallback
       return mixRgb(base, color, strength)
@@ -105,14 +105,14 @@ function readPalette(mode: "light" | "dark", relative = false): RGB[] {
     parseColor(root.getPropertyValue("--text-accent-base")) ??
     parseColor(root.getPropertyValue("--text-interactive-base")) ??
     brandColor
-  const strength = mode === "dark" ? 0.78 : 0.88
+  const strength = mode === "dark" ? 0.65 : 0.75
 
   return [
     mixRgb(base, brandColor, strength),
     mixRgb(base, accentColor, strength),
     mixRgb(base, brandColor, strength * 0.85),
-    mixRgb(base, accentColor, strength * 0.9),
-    mixRgb(base, brandColor, strength * 0.95),
+    mixRgb(base, accentColor, strength * 0.88),
+    mixRgb(base, brandColor, strength * 0.9),
   ]
 }
 
@@ -129,14 +129,14 @@ function blobs(colors: RGB[], crisp = false): Blob[] {
   const blurRange = crisp ? { min: 20, max: 40 } : { min: 120, max: 200 }
 
   for (const b of base) {
-    const size = Math.round(rand(820, 1280))
+    const size = Math.round(rand(1020, 1280))
     list.push({
       x: rand(b.x - 14, b.x + 14),
       y: rand(b.y - 14, b.y + 14),
       size,
       scale: rand(0.9, 1.15),
       blur: Math.round(rand(blurRange.min, blurRange.max)),
-      alpha: rand(0.78, 0.95),
+      alpha: rand(0.88, 1.0),
       color: b.color,
     })
   }
