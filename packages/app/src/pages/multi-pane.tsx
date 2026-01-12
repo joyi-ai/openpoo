@@ -83,6 +83,16 @@ function GlobalReviewSynced(props: { paneId: string; directory: string; sessionI
     () => diffs().length > 0 || tabs().all().length > 0 || contextOpen(),
   )
 
+  createEffect(
+    on(
+      () => props.sessionId,
+      (sessionId) => {
+        if (!sessionId) return
+        void sync.session.diff(sessionId)
+      },
+    ),
+  )
+
   return (
     <LocalProvider>
       <FileProvider>
@@ -131,13 +141,13 @@ function GlobalReviewWrapper() {
   const focused = createMemo(() => multiPane.focusedPane())
 
   return (
-    <Show when={focused()}>
+    <Show when={focused()} keyed>
       {(pane) => (
-        <Show when={pane().directory}>
+        <Show when={pane.directory}>
           {(directory) => (
             <SDKProvider directory={directory()}>
               <SyncProvider>
-                <GlobalReviewSynced paneId={pane().id} directory={directory()} sessionId={pane().sessionId} />
+                <GlobalReviewSynced paneId={pane.id} directory={directory()} sessionId={pane.sessionId} />
               </SyncProvider>
             </SDKProvider>
           )}
