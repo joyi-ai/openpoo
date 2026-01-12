@@ -20,8 +20,6 @@ const InstallModeDialog: Component<{ mode: ModeDefinition; onInstalled?: () => v
   const [saving, setSaving] = createSignal(false)
   const missing = createMemo(() => local.mode.missingPlugins(props.mode))
 
-  const installHint = createMemo(() => (missing().includes("oh-my-opencode") ? "bunx oh-my-opencode install" : ""))
-
   const handleInstall = async () => {
     if (saving()) return
     setSaving(true)
@@ -58,14 +56,6 @@ const InstallModeDialog: Component<{ mode: ModeDefinition; onInstalled?: () => v
         <div class="text-12-regular text-text-weak">
           Add the plugin to your config and complete installation to enable this mode.
         </div>
-        <Show when={installHint()}>
-          <div class="flex flex-col gap-1">
-            <div class="text-12-medium text-text-strong">Install command</div>
-            <div class="px-2 py-1 rounded-md border border-border-base bg-surface-raised-base text-12-regular font-mono">
-              {installHint()}
-            </div>
-          </div>
-        </Show>
         <div class="flex items-center justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => dialog.close()}>
             Cancel

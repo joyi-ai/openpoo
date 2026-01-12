@@ -49,7 +49,6 @@ import { WorktreeStatusIndicator } from "@/components/session-worktree-indicator
 import { usePlatform } from "@/context/platform"
 import { VoiceButton } from "@/components/voice-button"
 import { VoiceRecordingWidget } from "@/components/voice-recording-widget"
-import type { ModeSettings } from "@/modes/types"
 
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"]
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_IMAGE_TYPES, "application/pdf"]
@@ -172,19 +171,17 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const [submitting, setSubmitting] = createSignal(false)
   type ModePayload = {
     id: string
-    settings?: ModeSettings
   }
   const modePayload = createMemo<ModePayload | undefined>(() => {
     const current = local.mode.current()
     if (!current) return undefined
     return {
       id: current.id,
-      settings: current.settings,
     }
   })
   const modeKey = (value: ModePayload | undefined) => {
     if (!value) return ""
-    return `${value.id}:${JSON.stringify(value.settings ?? null)}`
+    return value.id
   }
 
   const [store, setStore] = createStore<{

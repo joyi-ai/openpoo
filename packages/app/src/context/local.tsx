@@ -12,7 +12,7 @@ import { Persist, persisted } from "@/utils/persist"
 import { showToast } from "@opencode-ai/ui/toast"
 import { BUILTIN_MODES, DEFAULT_MODE_ID } from "@/modes/definitions"
 import { deleteCustomMode, saveCustomMode } from "@/modes/custom"
-import type { ModeDefinition, ModeOverride, ModeSettings } from "@/modes/types"
+import type { ModeDefinition, ModeOverride } from "@/modes/types"
 
 export type LocalFile = FileNode &
   Partial<{
@@ -46,34 +46,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     const sync = useSync()
     const providers = useProviders()
 
-    const mergeModeSettings = (base?: ModeSettings, override?: ModeSettings): ModeSettings | undefined => {
-      if (!base && !override) return undefined
-
-      const baseOmo = base?.ohMyOpenCode
-      const overrideOmo = override?.ohMyOpenCode
-      const mergedOmo =
-        baseOmo || overrideOmo
-          ? {
-              ...baseOmo,
-              ...overrideOmo,
-              sisyphusAgent: {
-                ...baseOmo?.sisyphusAgent,
-                ...overrideOmo?.sisyphusAgent,
-              },
-              claudeCode: {
-                ...baseOmo?.claudeCode,
-                ...overrideOmo?.claudeCode,
-              },
-            }
-          : undefined
-
-      return {
-        ...base,
-        ...override,
-        ohMyOpenCode: mergedOmo,
-      }
-    }
-
     const applyModeOverride = (base: ModeDefinition, override?: ModeOverride): ModeDefinition => {
       if (!override) return base
 
@@ -90,7 +62,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         color: override.color ?? base.color,
         providerOverride,
         defaultAgent,
-        settings: mergeModeSettings(base.settings, override.settings),
         overrides: mergedOverrides,
       }
     }
@@ -113,8 +84,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       const list = createMemo(() => baseList().map((item) => applyModeOverride(item, store.overrides[item.id])))
 
       const installedPlugins = createMemo(() => sync.data.config.plugin ?? [])
-      const agentNames = createMemo(() => new Set(sync.data.agent.map((agent) => agent.name)))
-
       const missingPlugins = (target: ModeDefinition) => {
         const required = target.requiresPlugins ?? []
         if (required.length === 0) return []
@@ -125,8 +94,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         return required.filter((plugin) => {
           // Check if plugin is in the config (source of truth for plugin availability)
           if (installedPlugins().some((entry) => entry.includes(plugin))) return false
-          // Fallback: check if the plugin's agents exist (e.g., Sisyphus for oh-my-opencode)
-          if (plugin === "oh-my-opencode" && agentNames().has("Sisyphus")) return false
           return true
         })
       }
@@ -147,23 +114,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         const active = target ?? current()
         const allowed = active?.allowedAgents?.length ? new Set(active.allowedAgents) : undefined
         const disabled = new Set(active?.disabledAgents ?? [])
-        const omo = active?.settings?.ohMyOpenCode
-
-        if (active?.id === "oh-my-opencode" && omo) {
-          const sisyphusDisabled = omo.sisyphusAgent?.disabled === true
-          const replacePlan = omo.sisyphusAgent?.replacePlan ?? true
-
-          if (!sisyphusDisabled) {
-            disabled.add("build")
-            if (replacePlan) disabled.add("plan")
-          }
-
-          for (const name of omo.disabledAgents ?? []) disabled.add(name)
-          if (omo.sisyphusAgent?.disabled) disabled.add("Sisyphus")
-          if (omo.sisyphusAgent?.defaultBuilderEnabled === false) disabled.add("OpenCode-Builder")
-          if (omo.sisyphusAgent?.plannerEnabled === false) disabled.add("Planner-Sisyphus")
-        }
-
         return { allowed, disabled }
       }
 
@@ -193,7 +143,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             ...(prev?.overrides ?? {}),
             ...(override.overrides ?? {}),
           },
-          settings: mergeModeSettings(prev?.settings, override.settings),
         }))
       }
 
@@ -447,7 +396,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         const a = agent.current()
         if (!a) return undefined
         const key = getFirstValidModel(
-          () => (mode.current()?.id === "oh-my-opencode" ? undefined : ephemeral.model[a.name]),
+          () => ephemeral.model[a.name],
           () => a.model,
           fallbackModel,
         )

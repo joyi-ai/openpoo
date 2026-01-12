@@ -77,7 +77,6 @@ export function useMessageActions() {
     if (!current) return undefined
     return {
       id: current.id,
-      settings: current.settings,
     }
   }
 

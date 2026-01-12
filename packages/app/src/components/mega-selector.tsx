@@ -24,8 +24,6 @@ const InstallModeDialog: Component<{ mode: ModeDefinition; onInstalled?: () => v
   const [saving, setSaving] = createSignal(false)
   const missing = createMemo(() => local.mode.missingPlugins(props.mode))
 
-  const installHint = createMemo(() => (missing().includes("oh-my-opencode") ? "bunx oh-my-opencode install" : ""))
-
   const handleInstall = async () => {
     if (saving()) return
     setSaving(true)
@@ -62,14 +60,6 @@ const InstallModeDialog: Component<{ mode: ModeDefinition; onInstalled?: () => v
         <div class="text-12-regular text-text-weak">
           Add the plugin to your config and complete installation to enable this mode.
         </div>
-        <Show when={installHint()}>
-          <div class="flex flex-col gap-1">
-            <div class="text-12-medium text-text-strong">Install command</div>
-            <div class="px-2 py-1 rounded-md border border-border-base bg-surface-raised-base text-12-regular font-mono">
-              {installHint()}
-            </div>
-          </div>
-        </Show>
         <div class="flex items-center justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => dialog.close()}>
             Cancel
@@ -100,7 +90,6 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
 
   const isClaudeCodeMode = createMemo(() => currentMode()?.id === "claude-code")
   const isCodexMode = createMemo(() => currentMode()?.id === "codex")
-  const isOhMyMode = createMemo(() => currentMode()?.id === "oh-my-opencode")
   const isOpencodeMode = createMemo(() => currentMode()?.id === "opencode")
 
   const baseModels = createMemo(() =>
@@ -200,7 +189,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
   const currentModel = createMemo(() => local.model.current())
   const variants = createMemo(() => local.model.variant.list())
   const currentVariant = createMemo(() => local.model.variant.current())
-  const hasVariants = createMemo(() => variants().length > 0 && !isOhMyMode())
+  const hasVariants = createMemo(() => variants().length > 0)
 
   const handleModeSelect = (mode: ModeDefinition) => {
     if (currentMode()?.id === mode.id) return
@@ -391,69 +380,62 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                   </div>
                 </Show>
               </Show>
-              <Show
-                when={!isOhMyMode()}
-                fallback={
-                  <div class="px-2 py-3 text-12-regular text-text-weak text-center">Managed by Oh My OpenCode</div>
-                }
-              >
-                <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto">
-                  <For each={models()}>
-                    {(model) => {
-                      const isCurrent = createMemo(
-                        () => currentModel()?.id === model.id && currentModel()?.provider.id === model.provider.id,
-                      )
-                      const isFavorite = createMemo(() =>
-                        local.model.favorite({ modelID: model.id, providerID: model.provider.id }),
-                      )
-                      return (
-                        <div class="group flex items-center">
+              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto">
+                <For each={models()}>
+                  {(model) => {
+                    const isCurrent = createMemo(
+                      () => currentModel()?.id === model.id && currentModel()?.provider.id === model.provider.id,
+                    )
+                    const isFavorite = createMemo(() =>
+                      local.model.favorite({ modelID: model.id, providerID: model.provider.id }),
+                    )
+                    return (
+                      <div class="group flex items-center">
+                        <button
+                          type="button"
+                          class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover text-left min-w-0"
+                          classList={{ "bg-surface-raised-base-hover": isCurrent() }}
+                          onClick={() => {
+                            local.model.set({ modelID: model.id, providerID: model.provider.id }, { recent: true })
+                          }}
+                        >
+                          <span class="flex-1 text-13-regular text-text-strong truncate">{model.name}</span>
+                          <Show when={model.latest}>
+                            <Tag>Latest</Tag>
+                          </Show>
+                        </button>
+                        <Show when={isOpencodeMode()}>
                           <button
                             type="button"
-                            class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover text-left min-w-0"
-                            classList={{ "bg-surface-raised-base-hover": isCurrent() }}
-                            onClick={() => {
-                              local.model.set({ modelID: model.id, providerID: model.provider.id }, { recent: true })
+                            class="p-1 rounded hover:bg-surface-raised-base-hover shrink-0"
+                            classList={{
+                              "opacity-0 group-hover:opacity-100": !isFavorite(),
+                              "opacity-100": isFavorite(),
                             }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              local.model.toggleFavorite({ modelID: model.id, providerID: model.provider.id })
+                            }}
+                            title={isFavorite() ? "Remove from favorites" : "Add to favorites"}
                           >
-                            <span class="flex-1 text-13-regular text-text-strong truncate">{model.name}</span>
-                            <Show when={model.latest}>
-                              <Tag>Latest</Tag>
-                            </Show>
-                          </button>
-                          <Show when={isOpencodeMode()}>
-                            <button
-                              type="button"
-                              class="p-1 rounded hover:bg-surface-raised-base-hover shrink-0"
+                            <Icon
+                              name="check"
+                              size="small"
                               classList={{
-                                "opacity-0 group-hover:opacity-100": !isFavorite(),
-                                "opacity-100": isFavorite(),
+                                "text-icon-success-base": isFavorite(),
+                                "text-icon-weak": !isFavorite(),
                               }}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                local.model.toggleFavorite({ modelID: model.id, providerID: model.provider.id })
-                              }}
-                              title={isFavorite() ? "Remove from favorites" : "Add to favorites"}
-                            >
-                              <Icon
-                                name="check"
-                                size="small"
-                                classList={{
-                                  "text-icon-success-base": isFavorite(),
-                                  "text-icon-weak": !isFavorite(),
-                                }}
-                              />
-                            </button>
-                          </Show>
-                        </div>
-                      )
-                    }}
-                  </For>
-                  <Show when={models().length === 0}>
-                    <div class="px-2 py-3 text-12-regular text-text-weak text-center">No models found</div>
-                  </Show>
-                </div>
-              </Show>
+                            />
+                          </button>
+                        </Show>
+                      </div>
+                    )
+                  }}
+                </For>
+                <Show when={models().length === 0}>
+                  <div class="px-2 py-3 text-12-regular text-text-weak text-center">No models found</div>
+                </Show>
+              </div>
             </div>
 
             {/* OPTIONS COLUMN (Variant + Extended Thinking) */}

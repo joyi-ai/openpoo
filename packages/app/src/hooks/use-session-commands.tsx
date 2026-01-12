@@ -129,14 +129,6 @@ export function useSessionCommands(options: UseSessionCommandsOptions): void {
       slash: "model",
       disabled: !enabled(),
       onSelect: () => {
-        if (local.mode.current()?.id === "oh-my-opencode") {
-          showToast({
-            variant: "default",
-            title: "Default model",
-            description: "Model selection is managed by Oh My OpenCode.",
-          })
-          return
-        }
         dialog.show(() => <DialogSelectModel />)
       },
     },
@@ -177,14 +169,6 @@ export function useSessionCommands(options: UseSessionCommandsOptions): void {
       keybind: "shift+mod+t",
       disabled: !enabled(),
       onSelect: () => {
-        if (local.mode.current()?.id === "oh-my-opencode") {
-          showToast({
-            variant: "default",
-            title: "Default model",
-            description: "Thinking effort is managed by Oh My OpenCode.",
-          })
-          return
-        }
         local.model.variant.cycle()
         showToast({
           title: "Thinking effort changed",

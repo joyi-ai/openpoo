@@ -8,7 +8,6 @@ import { BunProc } from "../bun"
 import { Instance } from "../project/instance"
 import { Flag } from "../flag/flag"
 import { CodexAuthPlugin } from "./codex"
-import { SessionMode } from "@/session/mode"
 
 export namespace Plugin {
   const log = Log.create({ service: "plugin" })
@@ -16,43 +15,6 @@ export namespace Plugin {
   type Entry = {
     name: string
     hook: Hooks
-  }
-
-  function getSessionID(input: unknown): string | undefined {
-    if (!input || typeof input !== "object") return undefined
-    if (!("sessionID" in input)) return undefined
-    const value = (input as { sessionID?: unknown }).sessionID
-    if (typeof value !== "string") return undefined
-    return value
-  }
-
-  function getEventSessionID(event: unknown): string | undefined {
-    if (!event || typeof event !== "object") return undefined
-    if (!("properties" in event)) return undefined
-    const props = (event as { properties?: unknown }).properties
-    if (!props || typeof props !== "object") return undefined
-    if ("sessionID" in props) {
-      const value = (props as { sessionID?: unknown }).sessionID
-      if (typeof value === "string") return value
-    }
-    if (!("info" in props)) return undefined
-    const info = (props as { info?: unknown }).info
-    if (!info || typeof info !== "object") return undefined
-    if ("sessionID" in info) {
-      const value = (info as { sessionID?: unknown }).sessionID
-      if (typeof value === "string") return value
-    }
-    if (!("id" in info)) return undefined
-    const id = (info as { id?: unknown }).id
-    if (typeof id !== "string") return undefined
-    if (!id.startsWith("session_")) return undefined
-    return id
-  }
-
-  function isPluginEnabled(name: string, sessionID?: string): boolean {
-    if (name !== "oh-my-opencode") return true
-    if (!sessionID) return false
-    return SessionMode.isOhMyMode(SessionMode.get(sessionID))
   }
 
   const BUILTIN = ["opencode-copilot-auth@0.0.11", "opencode-anthropic-auth@0.0.8"]
@@ -137,9 +99,7 @@ export namespace Plugin {
     Output = Parameters<Required<Hooks>[Name]>[1],
   >(name: Name, input: Input, output: Output): Promise<Output> {
     if (!name) return output
-    const sessionID = getSessionID(input)
     for (const entry of await state().then((x) => x.entries)) {
-      if (!isPluginEnabled(entry.name, sessionID)) continue
       const fn = entry.hook[name]
       if (!fn) continue
       // @ts-expect-error if you feel adventurous, please fix the typing, make sure to bump the try-counter if you
@@ -165,10 +125,8 @@ export namespace Plugin {
       await hook.hook.config?.(config)
     }
     Bus.subscribeAll(async (input) => {
-      const sessionID = getEventSessionID(input)
       const hooks = await state().then((x) => x.entries)
       for (const hook of hooks) {
-        if (!isPluginEnabled(hook.name, sessionID)) continue
         hook.hook["event"]?.({
           event: input,
         })

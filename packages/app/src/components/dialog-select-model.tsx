@@ -23,7 +23,6 @@ const ModelList: Component<{
   const local = useLocal()
   const isClaudeCodeMode = createMemo(() => local.mode.current()?.id === "claude-code")
   const isCodexMode = createMemo(() => local.mode.current()?.id === "codex")
-  const isOpencodeMode = createMemo(() => local.mode.current()?.id === "opencode")
   const [hoveredModel, setHoveredModel] = createSignal<string | null>(null)
 
   const models = createMemo(() =>
@@ -218,22 +217,11 @@ export const ModelSelectorPopover: Component<{
 export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
   const dialog = useDialog()
   const local = useLocal()
-  const isOhMyMode = createMemo(() => local.mode.current()?.id === "oh-my-opencode")
   const isClaudeCodeMode = createMemo(() => local.mode.current()?.id === "claude-code")
   const isCodexMode = createMemo(() => local.mode.current()?.id === "codex")
   const variants = createMemo(() => local.model.variant.list())
   const currentVariant = createMemo(() => local.model.variant.current())
   const hasVariants = createMemo(() => variants().length > 0)
-
-  if (isOhMyMode()) {
-    return (
-      <Dialog title="Select model" description="Managed by Oh My OpenCode">
-        <div class="px-3 pb-6 text-13-regular text-text-weak">
-          Model selection is managed by Oh My OpenCode. The current agent will use its configured default model.
-        </div>
-      </Dialog>
-    )
-  }
 
   if (isCodexMode()) {
     return (

@@ -7,7 +7,6 @@ import { ClaudePluginLoader } from "./loader"
 import { ClaudePluginSchema } from "./schema"
 import { ClaudePluginTransform } from "./transform"
 import { ClaudePluginTranscript } from "./transcript"
-import { SessionMode } from "@/session/mode"
 
 export namespace ClaudePluginHooks {
   const log = Log.create({ service: "claude-plugin.hooks" })
@@ -193,12 +192,6 @@ export namespace ClaudePluginHooks {
       return []
     }
 
-    const mode = context.sessionID ? SessionMode.get(context.sessionID) : undefined
-    if (!SessionMode.isClaudeFeatureEnabled(mode, "hooks")) {
-      log.info("claude hooks disabled for mode", { event, sessionID: context.sessionID })
-      return []
-    }
-
     // Check if event is disabled via config
     if (await ClaudePluginConfig.isEventDisabled(event)) {
       log.info("event disabled via config", { event })
@@ -217,20 +210,9 @@ export namespace ClaudePluginHooks {
 
     const results: HookResult[] = []
     for (const hook of hooks) {
-      if (SessionMode.isOhMyPlugin(hook.pluginId) && !SessionMode.isOhMyMode(mode)) {
-        log.info("oh-my-opencode hook disabled for mode", { pluginId: hook.pluginId })
-        continue
-      }
-
       // Check if plugin is disabled via config
       if (await ClaudePluginConfig.isPluginDisabled(hook.pluginId)) {
         log.info("plugin disabled via config", { pluginId: hook.pluginId })
-        continue
-      }
-
-      const hookId = hook.command ?? hook.prompt
-      if (SessionMode.isHookDisabled(mode, hookId)) {
-        log.info("hook disabled for mode", { pluginId: hook.pluginId })
         continue
       }
 

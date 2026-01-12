@@ -1,5 +1,4 @@
 import type { ModeDefinition, ModeId } from "./types"
-import { OH_MY_OPENCODE_DEFAULT_SETTINGS } from "./oh-my-opencode"
 
 export const DEFAULT_MODE_ID: ModeId = "claude-code"
 
@@ -33,29 +32,6 @@ export const BUILTIN_MODES: ModeDefinition[] = [
     icon: "code",
     color: "#3D405B",
     defaultAgent: "build",
-    disabledAgents: [
-      "Sisyphus",
-      "OpenCode-Builder",
-      "Planner-Sisyphus",
-      "oracle",
-      "librarian",
-      "frontend-ui-ux-engineer",
-      "document-writer",
-      "multimodal-looker",
-    ],
-    builtin: true,
-  },
-  {
-    id: "oh-my-opencode",
-    name: "Oh My OpenCode",
-    description: "Sisyphus orchestration with enhanced specialist agents.",
-    icon: "brain",
-    color: "#00CED1",
-    defaultAgent: "Sisyphus",
-    requiresPlugins: ["oh-my-opencode"],
-    settings: {
-      ohMyOpenCode: OH_MY_OPENCODE_DEFAULT_SETTINGS,
-    },
     builtin: true,
   },
 ]

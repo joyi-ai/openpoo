@@ -12,7 +12,6 @@ import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
 import { SessionMode } from "@/session/mode"
-import { ClaudePlugin } from "@/claude-plugin"
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
@@ -61,15 +60,6 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       const mode = SessionMode.get(ctx.sessionID)
       if (!SessionMode.isAgentAllowed(mode, agent.name)) {
         throw new Error(`Agent "${agent.name}" is disabled for the current mode.`)
-      }
-      const claudeAgent = await ClaudePlugin.findAgent(agent.name)
-      if (claudeAgent) {
-        if (SessionMode.isOhMyPlugin(claudeAgent.pluginName) && !SessionMode.isOhMyMode(mode)) {
-          throw new Error(`Agent "${agent.name}" is disabled for the current mode.`)
-        }
-        if (!SessionMode.isClaudeFeatureEnabled(mode, "agents")) {
-          throw new Error(`Claude plugin agent "${agent.name}" is disabled for the current mode.`)
-        }
       }
       const session = await iife(async () => {
         if (params.session_id) {

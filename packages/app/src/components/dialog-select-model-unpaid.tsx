@@ -15,21 +15,10 @@ export const DialogSelectModelUnpaid: Component = () => {
   const local = useLocal()
   const dialog = useDialog()
   const providers = useProviders()
-  const isOhMyMode = createMemo(() => local.mode.current()?.id === "oh-my-opencode")
   const models = createMemo(() =>
     local.model.list().filter((m) => m.provider.id !== "claude-agent" && m.provider.id !== "codex"),
   )
   const popularItems = createMemo(() => providers.popular().filter((provider) => provider.id !== "claude-agent"))
-
-  if (isOhMyMode()) {
-    return (
-      <Dialog title="Select model" description="Managed by Oh My OpenCode">
-        <div class="px-3 pb-6 text-13-regular text-text-weak">
-          Model selection is managed by Oh My OpenCode. The current agent will use its configured default model.
-        </div>
-      </Dialog>
-    )
-  }
 
   let listRef: ListRef | undefined
   const handleKey = (e: KeyboardEvent) => {

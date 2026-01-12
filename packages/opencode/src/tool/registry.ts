@@ -25,7 +25,6 @@ import { Flag } from "@/flag/flag"
 import { Log } from "@/util/log"
 import { LspTool } from "./lsp"
 import { Truncate } from "./truncation"
-import { SessionMode } from "@/session/mode"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -121,11 +120,9 @@ export namespace ToolRegistry {
 
   export async function tools(providerID: string, agent?: Agent.Info, sessionID?: string) {
     const tools = await all()
-    const mode = sessionID ? SessionMode.get(sessionID) : undefined
     const result = await Promise.all(
       tools
         .filter((t) => {
-          if (t.source?.plugin === "oh-my-opencode" && !SessionMode.isOhMyMode(mode)) return false
           // Enable websearch/codesearch for zen users OR via enable flag
           if (t.id === "codesearch" || t.id === "websearch") {
             return providerID === "opencode" || Flag.OPENCODE_ENABLE_EXA

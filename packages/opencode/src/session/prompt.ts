@@ -229,21 +229,10 @@ export namespace SessionPrompt {
         message: `Agent "${name}" is disabled for the current mode.`,
       })
     }
-    const claudeAgent = await ClaudePlugin.findAgent(name)
-    if (!claudeAgent) return
-    if (SessionMode.isOhMyPlugin(claudeAgent.pluginName) && !SessionMode.isOhMyMode(mode)) {
-      throw new NamedError.Unknown({
-        message: `Agent "${name}" is disabled for the current mode.`,
-      })
-    }
-    if (SessionMode.isClaudeFeatureEnabled(mode, "agents")) return
-    throw new NamedError.Unknown({
-      message: `Claude plugin agent "${name}" is disabled for the current mode.`,
-    })
   }
 
-  function claudeHooksEnabled(sessionID: string) {
-    return SessionMode.isClaudeFeatureEnabled(SessionMode.get(sessionID), "hooks")
+  function claudeHooksEnabled(_sessionID: string) {
+    return true
   }
 
   export const prompt = fn(PromptInput, async (input) => {
@@ -264,9 +253,7 @@ export namespace SessionPrompt {
       .map((p) => p.text)
       .join("\n")
 
-    const mode = SessionMode.get(input.sessionID)
-    const hooksEnabled = SessionMode.isClaudeFeatureEnabled(mode, "hooks")
-    if (hooksEnabled) {
+    if (claudeHooksEnabled(input.sessionID)) {
       // Trigger UserPromptSubmit hook (skipped for sub-sessions)
       await ClaudePlugin.Hooks.trigger("UserPromptSubmit", {
         sessionID: input.sessionID,
@@ -2006,20 +1993,6 @@ export namespace SessionPrompt {
     const session = await Session.get(input.sessionID)
     SessionMode.set(session.id, session.mode)
     await applyMode(session, input.mode)
-    const mode = SessionMode.get(input.sessionID)
-    const claudeCommand = await ClaudePlugin.findCommand(input.command)
-    if (claudeCommand) {
-      if (SessionMode.isOhMyPlugin(claudeCommand.pluginName) && !SessionMode.isOhMyMode(mode)) {
-        throw new NamedError.Unknown({
-          message: `Command "${input.command}" is disabled for the current mode.`,
-        })
-      }
-      if (!SessionMode.isClaudeFeatureEnabled(mode, "commands")) {
-        throw new NamedError.Unknown({
-          message: `Claude plugin command "${input.command}" is disabled for the current mode.`,
-        })
-      }
-    }
     const command = await Command.get(input.command)
     const agentName = command.agent ?? input.agent ?? (await Agent.defaultAgent())
     await assertAgentAllowed(input.sessionID, agentName)
