@@ -30,7 +30,7 @@ import { Spinner } from "@opencode-ai/ui/spinner"
 import { Mark } from "@opencode-ai/ui/logo"
 import { getFilename, truncateDirectoryPrefix } from "@opencode-ai/util/path"
 import { DropdownMenu } from "@opencode-ai/ui/dropdown-menu"
-import { Session } from "@opencode-ai/sdk/v2/client"
+import type { Message, Part, Session } from "@opencode-ai/sdk/v2/client"
 import { usePlatform } from "@/context/platform"
 import { createStore, produce, reconcile } from "solid-js/store"
 import {
@@ -342,7 +342,80 @@ export default function Layout(props: ParentProps) {
     running: number
   }
 
-  const prefetchChunk = 200
+  type MessageWithParts = { info: Message; parts: Part[] }
+
+  type PreviewLine = { role: "user" | "assistant"; text: string }
+  type PreviewState =
+    | { status: "loading" }
+    | { status: "ready"; lines: PreviewLine[]; builtAt: number }
+    | { status: "error"; builtAt: number }
+
+  const previewTtl = 60_000
+  const [preview, setPreview] = createStore({
+    session: {} as Record<string, PreviewState>,
+  })
+
+  const previewKeyFor = (directory: string, sessionID: string) => `${normalizeDirectory(directory)}:${sessionID}`
+
+  const sanitizePreviewText = (text: string) =>
+    text
+      .replace(/\r\n/g, "\n")
+      .split("\n")
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()
+
+  const truncatePreviewText = (text: string, max: number) => {
+    if (text.length <= max) return text
+    return `${text.slice(0, max - 1)}…`
+  }
+
+  const extractPreviewText = (parts: Part[]) => {
+    for (const part of parts) {
+      if (part.type !== "text") continue
+      if (part.ignored) continue
+      if (part.synthetic) continue
+      const cleaned = sanitizePreviewText(part.text)
+      if (!cleaned) continue
+      return cleaned
+    }
+  }
+
+  const buildPreviewLines = (items: MessageWithParts[]) => {
+    const sorted = items
+      .filter((x) => !!x?.info?.id)
+      .slice()
+      .sort((a, b) => a.info.id.localeCompare(b.info.id))
+
+    const lines: PreviewLine[] = []
+    for (const item of sorted.slice().reverse()) {
+      const role = item.info.role
+      if (role !== "user" && role !== "assistant") continue
+      const text = extractPreviewText(item.parts)
+      if (!text) continue
+      const next: PreviewLine = { role, text: truncatePreviewText(text, 200) }
+      lines.unshift(next)
+      if (lines.length >= 2) break
+    }
+    return lines
+  }
+
+  const hoverPrefetch = {
+    timer: undefined as ReturnType<typeof setTimeout> | undefined,
+    key: undefined as string | undefined,
+  }
+  onCleanup(() => {
+    if (!hoverPrefetch.timer) return
+    clearTimeout(hoverPrefetch.timer)
+  })
+  createEffect(() => {
+    globalSDK.url
+    setPreview("session", {})
+  })
+
+  const prefetchChunk = 30
   const prefetchConcurrency = 1
   const prefetchPendingLimit = 6
   const prefetchToken = { value: 0 }
@@ -374,24 +447,31 @@ export default function Layout(props: ParentProps) {
   }
 
   const prefetchMessages = (directory: string, sessionID: string, token: number) => {
-    const [, setStore] = globalSync.child(directory)
+    const [store, setStore] = globalSync.child(directory)
+    const key = previewKeyFor(directory, sessionID)
 
     return retry(() => globalSDK.client.session.messages({ directory, sessionID, limit: prefetchChunk }))
       .then((messages) => {
         if (prefetchToken.value !== token) return
 
-        const items = (messages.data ?? []).filter((x) => !!x?.info?.id)
+        const items = (messages.data ?? []).filter((x) => !!x?.info?.id) as MessageWithParts[]
         const next = items
           .map((x) => x.info)
           .filter((m) => !!m?.id)
           .slice()
           .sort((a, b) => a.id.localeCompare(b.id))
+        const lines = buildPreviewLines(items)
 
         batch(() => {
-          setStore("message", sessionID, reconcile(next, { key: "id" }))
+          if (store.message[sessionID] === undefined) {
+            setStore("message", sessionID, reconcile(next, { key: "id" }))
+          }
+          setPreview("session", key, { status: "ready", lines, builtAt: Date.now() })
         })
       })
-      .catch(() => undefined)
+      .catch(() => {
+        setPreview("session", key, { status: "error", builtAt: Date.now() })
+      })
   }
 
   const pumpPrefetch = (directory: string) => {
@@ -414,16 +494,22 @@ export default function Layout(props: ParentProps) {
     })
   }
 
-  const prefetchSession = (session: Session, priority: "high" | "low" = "low") => {
-    const directory = session.directory
+  const prefetchSession = (session: Session, priority: "high" | "low" = "low", directoryOverride?: string) => {
+    const directory = directoryOverride ?? session.directory
     if (!directory) return
 
-    const [store] = globalSync.child(directory)
-    if (store.message[session.id] !== undefined) return
+    const key = previewKeyFor(directory, session.id)
+    const cached = preview.session[key]
+    if (cached?.status === "ready") {
+      const age = Date.now() - cached.builtAt
+      if (age < previewTtl) return
+    }
 
     const q = queueFor(directory)
     if (q.inflight.has(session.id)) return
     if (q.pendingSet.has(session.id)) return
+
+    setPreview("session", key, { status: "loading" })
 
     if (priority === "high") q.pending.unshift(session.id)
     if (priority !== "high") q.pending.push(session.id)
@@ -436,6 +522,42 @@ export default function Layout(props: ParentProps) {
     }
 
     pumpPrefetch(directory)
+  }
+
+  const scheduleHoverPrefetch = (session: Session, directoryOverride?: string) => {
+    const directory = directoryOverride ?? session.directory
+    if (!directory) return
+
+    const key = previewKeyFor(directory, session.id)
+    hoverPrefetch.key = key
+
+    if (hoverPrefetch.timer) clearTimeout(hoverPrefetch.timer)
+
+    const cached = preview.session[key]
+    if (cached?.status === "ready") {
+      const age = Date.now() - cached.builtAt
+      if (age < previewTtl) return
+    }
+
+    setPreview("session", key, { status: "loading" })
+
+    hoverPrefetch.timer = setTimeout(() => {
+      if (hoverPrefetch.key !== key) return
+      prefetchSession(session, "high", directory)
+    }, 150)
+  }
+
+  const cancelHoverPrefetch = (session: Session, directoryOverride?: string) => {
+    const directory = directoryOverride ?? session.directory
+    if (!directory) return
+
+    const key = previewKeyFor(directory, session.id)
+    if (hoverPrefetch.key !== key) return
+    hoverPrefetch.key = undefined
+
+    if (!hoverPrefetch.timer) return
+    clearTimeout(hoverPrefetch.timer)
+    hoverPrefetch.timer = undefined
   }
 
   createEffect(() => {
@@ -957,6 +1079,14 @@ export default function Layout(props: ParentProps) {
       }
       return `/${base64Encode(sessionDirectory())}/session/${props.session.id}`
     })
+    const previewKey = createMemo(() => previewKeyFor(sessionDirectory(), props.session.id))
+    const previewState = createMemo(() => preview.session[previewKey()])
+    const previewLines = createMemo(() => {
+      const state = previewState()
+      if (!state) return []
+      if (state.status !== "ready") return []
+      return state.lines
+    })
 
     return (
       <>
@@ -969,13 +1099,51 @@ export default function Layout(props: ParentProps) {
             "bg-surface-raised-base-hover": isActive(),
           }}
         >
-          <Tooltip placement={props.mobile ? "bottom" : "right"} value={props.session.title} gutter={10}>
+          <Tooltip
+            placement={props.mobile ? "bottom" : "right"}
+            value={
+              props.mobile ? (
+                props.session.title
+              ) : (
+                <div class="flex flex-col gap-1 min-w-0 max-w-[320px]">
+                  <div class="text-12-medium">{props.session.title}</div>
+                  <Switch>
+                    <Match when={previewState()?.status === "error"}>
+                      <div class="text-12-regular opacity-70">Preview unavailable</div>
+                    </Match>
+                    <Match when={previewState()?.status === "ready"}>
+                      <Show
+                        when={previewLines().length > 0}
+                        fallback={<div class="text-12-regular opacity-70">No messages yet</div>}
+                      >
+                        <For each={previewLines()}>
+                          {(line) => (
+                            <div class="flex gap-2 min-w-0">
+                              <span class="shrink-0 text-12-medium opacity-60">
+                                {line.role === "user" ? "You" : "Assistant"}:
+                              </span>
+                              <span class="min-w-0 text-12-regular truncate">{line.text}</span>
+                            </div>
+                          )}
+                        </For>
+                      </Show>
+                    </Match>
+                    <Match when={true}>
+                      <div class="text-12-regular opacity-70">Loading preview…</div>
+                    </Match>
+                  </Switch>
+                </div>
+              )
+            }
+            gutter={10}
+          >
             <A
               href={sessionHref()}
               class="flex flex-col min-w-0 text-left w-full focus:outline-none"
               activeClass=""
-              onMouseEnter={() => prefetchSession(props.session, "high")}
-              onFocus={() => prefetchSession(props.session, "high")}
+              onMouseEnter={() => scheduleHoverPrefetch(props.session, sessionDirectory())}
+              onMouseLeave={() => cancelHoverPrefetch(props.session, sessionDirectory())}
+              onFocus={() => prefetchSession(props.session, "high", sessionDirectory())}
             >
               <div class="flex items-center self-stretch gap-6 justify-between transition-[padding] group-hover/session:pr-7 group-focus-within/session:pr-7 group-active/session:pr-7">
                 <span
