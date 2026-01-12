@@ -65,6 +65,7 @@ import { DialogSelectDirectory } from "@/components/dialog-select-directory"
 import { DialogWorktreeCleanup } from "@/components/dialog-worktree-cleanup"
 import { useServer } from "@/context/server"
 import { VoiceRecordingWidget } from "@/components/voice-recording-widget"
+import { SettingsDialog } from "@/components/settings-dialog"
 
 export default function Layout(props: ParentProps) {
   const [store, setStore] = createStore({
@@ -1189,68 +1190,28 @@ export default function Layout(props: ParentProps) {
       <>
         <div class="flex flex-col items-start self-stretch gap-4 p-2 min-h-0 overflow-hidden">
           <Show when={!sidebarProps.mobile}>
-            <A href="/" class="shrink-0 h-8 flex items-center justify-start px-2" data-tauri-drag-region>
-              <Mark class="shrink-0" />
-            </A>
-          </Show>
-          <Show when={!sidebarProps.mobile}>
-            <TooltipKeybind
-              class="shrink-0"
-              placement="right"
-              title="Toggle sidebar"
-              keybind={command.keybind("sidebar.toggle")}
-              inactive={expanded()}
-            >
-              <Button
-                variant="ghost"
-                size="large"
-                class="group/sidebar-toggle shrink-0 w-full text-left justify-start rounded-lg px-2"
-                onClick={layout.sidebar.toggle}
-              >
-                <div class="relative -ml-px flex items-center justify-center size-4 [&>*]:absolute [&>*]:inset-0">
-                  <Icon
-                    name={layout.sidebar.opened() ? "layout-left" : "layout-right"}
-                    size="small"
-                    class="group-hover/sidebar-toggle:hidden"
-                  />
-                  <Icon
-                    name={layout.sidebar.opened() ? "layout-left-partial" : "layout-right-partial"}
-                    size="small"
-                    class="hidden group-hover/sidebar-toggle:inline-block"
-                  />
-                  <Icon
-                    name={layout.sidebar.opened() ? "layout-left-full" : "layout-right-full"}
-                    size="small"
-                    class="hidden group-active/sidebar-toggle:inline-block"
-                  />
+            <div class="shrink-0 h-8 w-full flex items-center justify-between px-2" data-tauri-drag-region>
+              <A href="/">
+                <Mark class="shrink-0" />
+              </A>
+              <Show when={expanded()}>
+                <div class="flex gap-1 items-center">
+                  <Tooltip placement="bottom" value="Grid layout">
+                    <IconButton
+                      icon="dot-grid"
+                      variant={layout.multiPane.view() === "grid" ? "secondary" : "ghost"}
+                      onClick={() => layout.multiPane.setView("grid")}
+                    />
+                  </Tooltip>
+                  <Tooltip placement="bottom" value="Kanban layout">
+                    <IconButton
+                      icon="bullet-list"
+                      variant={layout.multiPane.view() === "kanban" ? "secondary" : "ghost"}
+                      onClick={() => layout.multiPane.setView("kanban")}
+                    />
+                  </Tooltip>
                 </div>
-                <Show when={layout.sidebar.opened()}>
-                  <div class="hidden group-hover/sidebar-toggle:block group-active/sidebar-toggle:block text-text-base">
-                    Toggle sidebar
-                  </div>
-                </Show>
-              </Button>
-            </TooltipKeybind>
-          </Show>
-          <Show when={!sidebarProps.mobile}>
-            <div
-              class="shrink-0 w-full flex gap-1 px-1"
-              classList={{ "flex-row": expanded(), "flex-col": !expanded(), "items-center": true }}
-            >
-              <Tooltip placement="right" value="Grid layout" inactive={expanded()}>
-                <IconButton
-                  icon="dot-grid"
-                  variant={layout.multiPane.view() === "grid" ? "secondary" : "ghost"}
-                  onClick={() => layout.multiPane.setView("grid")}
-                />
-              </Tooltip>
-              <Tooltip placement="right" value="Kanban layout" inactive={expanded()}>
-                <IconButton
-                  icon="bullet-list"
-                  variant={layout.multiPane.view() === "kanban" ? "secondary" : "ghost"}
-                  onClick={() => layout.multiPane.setView("kanban")}
-                />
-              </Tooltip>
+              </Show>
             </div>
           </Show>
           <DragDropProvider
@@ -1336,6 +1297,17 @@ export default function Layout(props: ParentProps) {
               <Show when={expanded()}>Marketplace</Show>
             </Button>
           </Tooltip>
+          <Tooltip placement="right" value="Settings" inactive={expanded()}>
+            <Button
+              class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
+              variant="ghost"
+              size="large"
+              icon="settings-gear"
+              onClick={() => dialog.show(() => <SettingsDialog />)}
+            >
+              <Show when={expanded()}>Settings</Show>
+            </Button>
+          </Tooltip>
           {/* <Tooltip placement="right" value="Share feedback" inactive={expanded()}>
             <Button
               as={"a"}
@@ -1373,6 +1345,23 @@ export default function Layout(props: ParentProps) {
           >
             <SidebarContent />
           </div>
+          {/* Edge chevron for sidebar toggle */}
+          <TooltipKeybind
+            placement="right"
+            title={layout.sidebar.opened() ? "Collapse sidebar" : "Expand sidebar"}
+            keybind={command.keybind("sidebar.toggle")}
+          >
+            <button
+              class="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 z-50 h-12 w-5 flex items-center justify-center rounded-md bg-surface-raised-base border border-border-base shadow-sm hover:bg-surface-raised-base-hover transition-colors cursor-pointer"
+              onClick={layout.sidebar.toggle}
+            >
+              <Icon
+                name="chevron-right"
+                size="small"
+                class={layout.sidebar.opened() ? "text-icon-base rotate-180" : "text-icon-base"}
+              />
+            </button>
+          </TooltipKeybind>
           <Show when={layout.sidebar.opened()}>
             <ResizeHandle
               direction="horizontal"

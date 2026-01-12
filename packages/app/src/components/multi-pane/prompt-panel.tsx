@@ -230,7 +230,7 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
   )
 
   return (
-    <div class="shrink-0 flex flex-col border-t border-border-weak-base">
+    <div class="shrink-0 flex flex-col">
       <Show when={view().terminal.opened()}>
         <div
           class="relative w-full flex flex-col shrink-0"
@@ -278,7 +278,7 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
         </div>
       </Show>
 
-      <div class="px-3 flex justify-center">
+      <div class="px-3 pt-2 flex justify-center">
         <div class="w-full max-w-[800px]">
           <PromptInput
             ref={(el) => (editorRef = el)}

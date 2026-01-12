@@ -234,7 +234,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                           type="button"
                           class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover text-left"
                           classList={{
-                            "bg-surface-info-base/50": isCurrent(),
+                            "bg-surface-info-base dark:bg-blue-500/40": isCurrent(),
                             "opacity-70": missing().length > 0,
                           }}
                           onClick={() => handleModeSelect(mode)}
@@ -274,7 +274,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                       <button
                         type="button"
                         class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover text-left"
-                        classList={{ "bg-surface-info-base/50": isCurrent() }}
+                        classList={{ "bg-surface-info-base dark:bg-blue-500/40": isCurrent() }}
                         onClick={() => local.agent.set(agent.name)}
                       >
                         <span
@@ -410,7 +410,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                         <button
                           type="button"
                           class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-surface-raised-base-hover text-left min-w-0"
-                          classList={{ "bg-surface-info-base/50": isCurrent() }}
+                          classList={{ "bg-surface-info-base dark:bg-blue-500/40": isCurrent() }}
                           onClick={() => {
                             local.model.set({ modelID: model.id, providerID: model.provider.id }, { recent: true })
                           }}
@@ -475,7 +475,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                         type="button"
                         class="px-2 py-1 rounded text-12-regular text-left hover:bg-surface-raised-base-hover"
                         classList={{
-                          "bg-surface-info-base/50 text-text-info-base": currentVariant() === undefined,
+                          "bg-surface-info-base dark:bg-blue-500/40 text-text-info-base": currentVariant() === undefined,
                           "text-text-strong": currentVariant() !== undefined,
                         }}
                         onClick={() => local.model.variant.set(undefined)}
@@ -488,7 +488,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                             type="button"
                             class="px-2 py-1 rounded text-12-regular capitalize text-left hover:bg-surface-raised-base-hover"
                             classList={{
-                              "bg-surface-info-base/50 text-text-info-base": currentVariant() === variant,
+                              "bg-surface-info-base dark:bg-blue-500/40 text-text-info-base": currentVariant() === variant,
                               "text-text-strong": currentVariant() !== variant,
                             }}
                             onClick={() => local.model.variant.set(variant)}

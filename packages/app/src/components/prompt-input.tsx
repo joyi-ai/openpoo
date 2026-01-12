@@ -38,14 +38,11 @@ import { IconButton } from "@opencode-ai/ui/icon-button"
 import { getDirectory, getFilename } from "@opencode-ai/util/path"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { showToast } from "@opencode-ai/ui/toast"
-import { SettingsPopover } from "@/components/settings-popover"
-import { SettingsDialogButton } from "@/components/settings-dialog"
 import { MegaSelector } from "@/components/mega-selector"
 import { useCommand } from "@/context/command"
 import { Persist, persisted } from "@/utils/persist"
 import { Identifier } from "@/utils/id"
 import { SessionContextUsage } from "@/components/session-context-usage"
-import { WorktreeStatusIndicator } from "@/components/session-worktree-indicator"
 import { usePlatform } from "@/context/platform"
 import { VoiceButton } from "@/components/voice-button"
 import { FloatingMegaSelector } from "@/components/floating-mega-selector"
@@ -103,6 +100,26 @@ interface SlashCommand {
   description?: string
   keybind?: string
   type: "builtin" | "custom" | "skill"
+}
+
+const WorktreeToggleButton: Component = () => {
+  const sync = useSync()
+  const layout = useLayout()
+  const isGitProject = createMemo(() => sync.data.vcs !== undefined)
+  const enabled = createMemo(() => layout.worktree.enabled())
+
+  return (
+    <Show when={isGitProject()}>
+      <Tooltip placement="top" value={enabled() ? "Worktree isolation enabled" : "Worktree isolation disabled"}>
+        <IconButton
+          icon="branch"
+          variant={enabled() ? "secondary" : "ghost"}
+          class="size-6"
+          onClick={() => layout.worktree.toggle()}
+        />
+      </Tooltip>
+    </Show>
+  )
 }
 
 export const PromptInput: Component<PromptInputProps> = (props) => {
@@ -1563,10 +1580,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   return (
     <div class="relative size-full _max-h-[320px] flex flex-col">
       <FloatingMegaSelector />
-      {/* Worktree status indicator - above prompt bar on the right */}
-      <div class="flex justify-end">
-        <WorktreeStatusIndicator />
-      </div>
       <Show when={store.popover}>
         <div
           ref={(el) => {
@@ -1666,7 +1679,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         classList={{
           "group/prompt-input": true,
           "bg-surface-raised-stronger-non-alpha shadow-xs-border relative": true,
-          "rounded-md overflow-clip focus-within:shadow-xs-border": true,
+          "rounded-t-md overflow-clip focus-within:shadow-xs-border": true,
           "border-icon-info-active border-dashed": store.dragging,
           [props.class ?? ""]: !!props.class,
         }}
@@ -1814,9 +1827,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               </Match>
               <Match when={store.mode === "normal"}>
                 <MegaSelector />
-                <Show when={platform.platform === "desktop"} fallback={<SettingsPopover />}>
-                  <SettingsDialogButton />
-                </Show>
+                <WorktreeToggleButton />
               </Match>
             </Switch>
           </div>
