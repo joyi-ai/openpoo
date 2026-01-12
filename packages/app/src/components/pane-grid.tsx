@@ -5,7 +5,7 @@ import { useRadialDial } from "@/hooks/use-radial-dial"
 import { RadialDialMenu } from "@opencode-ai/ui/radial-dial-menu"
 
 const FLIP_DURATION = 200
-const GRID_GAP = 6
+const GRID_GAP = 0
 const CORNER_HIT_SIZE = 10
 const MIN_PANE_WIDTH = 240
 const MIN_PANE_HEIGHT = 180

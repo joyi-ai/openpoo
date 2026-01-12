@@ -1561,7 +1561,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   }
 
   return (
-    <div class="relative size-full _max-h-[320px] flex flex-col gap-2">
+    <div class="relative size-full _max-h-[320px] flex flex-col">
       <FloatingMegaSelector />
       {/* Worktree status indicator - above prompt bar on the right */}
       <div class="flex justify-end">

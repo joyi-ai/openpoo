@@ -372,7 +372,7 @@ export function SessionPane(props: SessionPaneProps) {
     >
       <Show when={props.mode === "multi" && hasMultiplePanes()}>
         <div
-          class="pointer-events-none absolute inset-0 z-30 border-2"
+          class="pointer-events-none absolute inset-0 z-30 border"
           classList={{
             "border-border-accent-base": isFocused(),
             "border-border-strong-base": !isFocused(),
@@ -387,7 +387,7 @@ export function SessionPane(props: SessionPaneProps) {
             position: "absolute",
             inset: 0,
             "z-index": 20,
-            "background-color": theme.mode() === "light" ? "rgba(0, 0, 0, 0.1)" : "rgba(0, 0, 0, 0.2)",
+            "background-color": theme.mode() === "light" ? "rgba(0, 0, 0, 0.05)" : "rgba(0, 0, 0, 0.1)",
             "pointer-events": "none",
           }}
         />

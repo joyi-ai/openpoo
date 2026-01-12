@@ -278,7 +278,7 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
         </div>
       </Show>
 
-      <div class="p-3 flex justify-center">
+      <div class="px-3 flex justify-center">
         <div class="w-full max-w-[800px]">
           <PromptInput
             ref={(el) => (editorRef = el)}
