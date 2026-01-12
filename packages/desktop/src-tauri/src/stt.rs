@@ -3,7 +3,10 @@
 //! This module provides local, offline speech recognition using NVIDIA's
 //! Parakeet TDT model running via ONNX Runtime.
 
-use ort::session::{builder::GraphOptimizationLevel, Session};
+use ort::{
+    session::{builder::GraphOptimizationLevel, Session},
+    value::TensorRef,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -284,9 +287,9 @@ impl SttInference {
         let waveforms_lens = ndarray::arr1(&[audio_len]);
 
         // Create input tensors
-        let waveforms_tensor = ort::value::Tensor::from_array_view(waveforms)
+        let waveforms_tensor = TensorRef::from_array_view(waveforms)
             .map_err(|e| format!("Failed to create waveforms tensor: {}", e))?;
-        let waveforms_lens_tensor = ort::value::Tensor::from_array_view(waveforms_lens.view())
+        let waveforms_lens_tensor = TensorRef::from_array_view(waveforms_lens.view())
             .map_err(|e| format!("Failed to create waveforms_lens tensor: {}", e))?;
 
         let mut preprocessor = self
@@ -299,9 +302,7 @@ impl SttInference {
                 "waveforms_lens" => waveforms_lens_tensor
             ])
             .map_err(|e| format!("Failed to run preprocessor: {}", e))?;
-        drop(preprocessor);
 
-        // Extract outputs
         let features_data = preprocessor_outputs[0]
             .try_extract_tensor::<f32>()
             .map_err(|e| format!("Failed to extract features: {}", e))?;
@@ -316,9 +317,9 @@ impl SttInference {
         let features_lens = ndarray::ArrayView1::from(features_lens_data.1);
 
         // Step 2: Encode features
-        let features_tensor = ort::value::Tensor::from_array_view(features)
+        let features_tensor = TensorRef::from_array_view(features)
             .map_err(|e| format!("Failed to create features tensor: {}", e))?;
-        let features_lens_tensor = ort::value::Tensor::from_array_view(features_lens)
+        let features_lens_tensor = TensorRef::from_array_view(features_lens)
             .map_err(|e| format!("Failed to create features_lens tensor: {}", e))?;
 
         let mut encoder = self.encoder.lock().map_err(|e| format!("Lock error: {}", e))?;
@@ -328,7 +329,6 @@ impl SttInference {
                 "length" => features_lens_tensor
             ])
             .map_err(|e| format!("Failed to run encoder: {}", e))?;
-        drop(encoder);
 
         let encoder_out_data = encoder_outputs[0]
             .try_extract_tensor::<f32>()
@@ -386,15 +386,15 @@ impl SttInference {
             targets[[0, 0]] = prev_token;
 
             // Create tensors for decoder
-            let encoder_frame_tensor = ort::value::Tensor::from_array_view(encoder_frame.view())
+            let encoder_frame_tensor = TensorRef::from_array_view(encoder_frame.view())
                 .map_err(|e| format!("Failed to create encoder_frame tensor: {}", e))?;
-            let targets_tensor = ort::value::Tensor::from_array_view(targets.view())
+            let targets_tensor = TensorRef::from_array_view(targets.view())
                 .map_err(|e| format!("Failed to create targets tensor: {}", e))?;
-            let target_length_tensor = ort::value::Tensor::from_array_view(target_length.view())
+            let target_length_tensor = TensorRef::from_array_view(target_length.view())
                 .map_err(|e| format!("Failed to create target_length tensor: {}", e))?;
-            let state1_tensor = ort::value::Tensor::from_array_view(state1.view())
+            let state1_tensor = TensorRef::from_array_view(state1.view())
                 .map_err(|e| format!("Failed to create state1 tensor: {}", e))?;
-            let state2_tensor = ort::value::Tensor::from_array_view(state2.view())
+            let state2_tensor = TensorRef::from_array_view(state2.view())
                 .map_err(|e| format!("Failed to create state2 tensor: {}", e))?;
 
             let decoder_outputs = decoder
