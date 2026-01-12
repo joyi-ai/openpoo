@@ -25,6 +25,9 @@ bun test --coverage       # Run with coverage report
 ./packages/sdk/js/script/build.ts
 # Or from repo root:
 ./script/generate.ts
+
+# Code formatting
+./script/format.ts
 ```
 
 ## Architecture Overview
@@ -44,21 +47,69 @@ OpenCode is an AI coding agent with a **client-server architecture**, focused on
 | `packages/desktop` | Tauri desktop app (main UI) |
 | `packages/app` | Shared SolidJS app components |
 | `packages/ui` | Shared UI component library |
+| `packages/web` | Astro-based documentation and landing site |
 | `packages/sdk/js` | Generated TypeScript SDK |
 | `packages/plugin` | `@opencode-ai/plugin` for custom tools |
+| `packages/util` | Utility functions and helpers |
+| `packages/script` | Build and deployment scripts |
+| `packages/function` | Cloudflare Workers functions |
+| `packages/slack` | Slack bot integration |
+| `packages/enterprise` | Enterprise features (SolidStart) |
+
+### Console Packages (`packages/console/`)
+
+| Package | Purpose |
+|---------|---------|
+| `console/app` | Console web application |
+| `console/core` | Database/ORM layer with Drizzle migrations |
+| `console/function` | Serverless functions |
+| `console/mail` | Email service |
+| `console/resource` | Resource management |
+
+### Extensions
+
+| Extension | Purpose |
+|-----------|---------|
+| `packages/extensions/zed` | Zed editor extension |
 
 ### Key Source Directories (`packages/opencode/src/`)
 
 | Directory | Purpose |
 |-----------|---------|
-| `agent/` | Agent definitions with prompts (build, plan, explore) |
-| `provider/` | AI provider abstraction (Anthropic, OpenAI, Google, etc.) |
-| `tool/` | Built-in tools (bash, read, edit, grep, glob, etc.) |
-| `session/` | Session/message management, agentic loop, compaction |
-| `permission/` | Permission system for tool execution |
-| `mcp/` | Model Context Protocol client integration |
-| `lsp/` | Language Server Protocol integration |
+| `acp/` | Agent Client Protocol support |
+| `agent/` | Agent definitions with prompts |
+| `auth/` | Authentication logic |
+| `bus/` | Event bus/pub-sub system |
+| `cache/` | Caching layer |
+| `claude-plugin/` | Claude Code plugins system |
+| `cli/` | Command-line interface |
+| `codex/` | Codex session and app server integration |
+| `command/` | Command templates |
 | `config/` | Configuration loading (opencode.json) |
+| `env/` | Environment configuration |
+| `file/` | File system utilities |
+| `flag/` | Feature flags |
+| `format/` | Code formatting |
+| `global/` | Global state/paths |
+| `id/` | Identifier generation |
+| `ide/` | IDE integration |
+| `installation/` | Installation management |
+| `lsp/` | Language Server Protocol integration |
+| `mcp/` | Model Context Protocol client integration |
+| `patch/` | Patching utilities |
+| `permission/` | Permission system for tool execution |
+| `provider/` | AI provider abstraction (15+ providers) |
+| `pty/` | PTY (pseudo-terminal) support |
+| `question/` | Interactive questions system |
+| `session/` | Session/message management, agentic loop, compaction |
+| `share/` | Sharing functionality |
+| `shell/` | Shell utilities |
+| `skill/` | Skills system |
+| `snapshot/` | Snapshot functionality |
+| `storage/` | Data storage/persistence |
+| `tool/` | Built-in tools |
+| `util/` | Miscellaneous utilities |
+| `worktree/` | Worktree management |
 
 ### Tool System
 
@@ -75,13 +126,59 @@ export const MyTool = Tool.define("my-tool", async () => ({
 }))
 ```
 
+**Built-in tools**: bash, read, write, edit, multiedit, glob, grep, task, todowrite, todoread, webfetch, websearch, codesearch, skill, question, lsp (experimental), batch (experimental)
+
 Custom tools: `.opencode/tool/` directories or via plugins.
 
 ### Agent System
 
-Built-in agents: `build` (full access), `plan` (read-only), `explore` (fast search), `general` (parallel tasks).
+**Built-in agents**:
+- `build` - Full access, primary agent
+- `plan` - Read-only with `.opencode/plan/*.md` edit access
+- `explore` - Fast search, read-only subagent
+- `general` - Parallel tasks subagent
+- `compaction` - Hidden, session compaction
+- `title` - Hidden, title generation
+- `summary` - Hidden, summary generation
+
+Agent configuration supports: mode (primary/subagent), custom model selection, temperature/topP, step limits, color coding, permissions.
 
 Custom agents: `.opencode/agent/*.md` files or `opencode.json` config.
+
+### Provider System
+
+Supports 15+ AI providers:
+- Anthropic, OpenAI, Google, Azure, Amazon Bedrock
+- Cerebras, Cohere, DeepInfra, Groq, Mistral
+- OpenRouter, Perplexity, Together AI, XAI, Google Vertex
+- Gateway (custom endpoints), Codex
+
+Provider features: model metadata, reasoning support, cost tracking, context/output limits, tool calling, modalities.
+
+### Claude Code Plugins System
+
+Full plugin support in `packages/opencode/src/claude-plugin/`:
+- Plugin discovery, loading, and management
+- Plugin marketplace integration
+- Dynamic agent and tool loading from plugins
+- Plugin hooks system
+- Stats and storage
+
+### Skills System
+
+Skills provide reusable prompts and commands:
+- Local skills: `.claude/skills/` or `.opencode/skills/`
+- Global skills: `~/.claude/skills/`
+- SKILL.md files with metadata
+- Compatible with both Claude Code and OpenCode formats
+
+### Questions System
+
+Interactive multiple-choice questions:
+- Options with descriptions
+- Multi-select support
+- Bus events for asking/replying/rejecting
+- Integration with tools and sessions
 
 ## Code Style
 
@@ -99,6 +196,15 @@ Custom agents: `.opencode/agent/*.md` files or `opencode.json` config.
 - **Path aliases**: `@/` maps to `src/`
 - **Prompts**: Stored as `.txt` files imported as strings
 - **Lazy init**: `lazy()` utility for deferred expensive operations
+
+## Configuration
+
+Project configuration in `.opencode/opencode.jsonc`:
+- Custom agents: `.opencode/agent/`
+- Custom commands: `.opencode/command/`
+- Custom skills: `.opencode/skill/`
+- Custom tools: `.opencode/tool/`
+- Themes: `.opencode/themes/`
 
 ## Testing
 
