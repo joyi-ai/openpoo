@@ -1390,24 +1390,6 @@ export default function Layout(props: ParentProps) {
               <A href="/">
                 <Mark class="shrink-0" />
               </A>
-              <Show when={expanded()}>
-                <div class="flex gap-1 items-center">
-                  <Tooltip placement="bottom" value="Grid layout">
-                    <IconButton
-                      icon="dot-grid"
-                      variant={layout.multiPane.view() === "grid" ? "secondary" : "ghost"}
-                      onClick={() => layout.multiPane.setView("grid")}
-                    />
-                  </Tooltip>
-                  <Tooltip placement="bottom" value="Kanban layout">
-                    <IconButton
-                      icon="bullet-list"
-                      variant={layout.multiPane.view() === "kanban" ? "secondary" : "ghost"}
-                      onClick={() => layout.multiPane.setView("kanban")}
-                    />
-                  </Tooltip>
-                </div>
-              </Show>
             </div>
           </Show>
           <DragDropProvider

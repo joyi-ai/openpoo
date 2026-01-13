@@ -79,10 +79,12 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
 
   function restorePaneState(paneId: string, session?: SessionCache, key?: string, skipModeRestore?: boolean) {
     const cached = paneCache.get(paneId)
+    const useCache = !key
+    const source = useCache ? cached : session
     setRestoring(true)
     setActiveKey(key)
     if (!skipModeRestore) {
-      const modeId = cached?.modeId ?? session?.modeId
+      const modeId = source?.modeId
       if (modeId) local.mode.set(modeId)
     }
     queueMicrotask(() => {
@@ -90,17 +92,17 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
         setRestoring(false)
         return
       }
-      const agent = cached?.agent ?? session?.agent
+      const agent = source?.agent
       if (agent) local.agent.set(agent)
-      const model = cached?.model ?? session?.model
+      const model = source?.model
       if (model) local.model.set(model)
-      const variant = cached?.variant ?? session?.variant
+      const variant = source?.variant
       if (variant !== undefined) local.model.variant.set(variant)
-      const thinking = cached?.thinking ?? session?.thinking
+      const thinking = source?.thinking
       if (thinking !== undefined) local.model.thinking.set(thinking)
       setRestoring(false)
     })
-    if (cached?.prompt && !prompt.dirty()) prompt.set(cached.prompt)
+    if (useCache && cached?.prompt && !prompt.dirty()) prompt.set(cached.prompt)
   }
 
   function pruneSessionCache() {

@@ -1,5 +1,5 @@
-import { For, Show, createMemo, createEffect, on, onMount, onCleanup, type Accessor } from "solid-js"
-import { createStore } from "solid-js/store"
+import { For, Show, createMemo, createEffect, on, onMount, onCleanup, createSignal, untrack, type Accessor } from "solid-js"
+import { createStore, produce } from "solid-js/store"
 import { useParams, useNavigate } from "@solidjs/router"
 import { ResizeHandle } from "@opencode-ai/ui/resize-handle"
 import { SessionTurn } from "@opencode-ai/ui/session-turn"
@@ -28,6 +28,7 @@ import { MobileView } from "./mobile-view"
 import { base64Decode } from "@opencode-ai/util/encode"
 import { getDirectory, getFilename } from "@opencode-ai/util/path"
 import { useNotification } from "@/context/notification"
+import { Persist, persisted } from "@/utils/persist"
 import type { UserMessage } from "@opencode-ai/sdk/v2"
 
 export type SessionPaneMode = "single" | "multi"
@@ -44,6 +45,21 @@ export interface SessionPaneProps {
   promptInputRef?: Accessor<HTMLDivElement | undefined>
   reviewMode?: "pane" | "global"
 }
+
+type SessionSetup = {
+  agent?: string
+  model?: { providerID: string; modelID: string }
+  variant?: string
+  modeId?: string
+  thinking?: boolean
+}
+
+type SessionSetupStore = {
+  entries: Record<string, SessionSetup>
+  used: Record<string, number>
+}
+
+const MAX_SESSION_SETUP = 50
 
 export function SessionPane(props: SessionPaneProps) {
   const params = useParams()
@@ -116,6 +132,77 @@ export function SessionPane(props: SessionPaneProps) {
     sessionId,
   })
 
+  const [setupStore, setSetupStore, _, setupReady] = persisted(
+    Persist.global("session-setup", ["session-setup.v1"]),
+    createStore<SessionSetupStore>({
+      entries: {},
+      used: {},
+    }),
+  )
+  const [activeSetupKey, setActiveSetupKey] = createSignal<string | undefined>(undefined)
+  const [restoringSetup, setRestoringSetup] = createSignal(false)
+  const [pendingSetupRestore, setPendingSetupRestore] = createSignal(false)
+
+  const setupKey = createMemo(() => {
+    const id = sessionId()
+    if (!id) return undefined
+    const directory = props.directory || sync.directory
+    if (!directory) return undefined
+    return `${directory}:${id}`
+  })
+
+  function pruneSetupStore() {
+    const keys = Object.keys(setupStore.entries)
+    if (keys.length <= MAX_SESSION_SETUP) return
+    const ordered = keys.slice().sort((a, b) => (setupStore.used[b] ?? 0) - (setupStore.used[a] ?? 0))
+    const drop = ordered.slice(MAX_SESSION_SETUP)
+    if (drop.length === 0) return
+    setSetupStore(
+      produce((draft) => {
+        for (const key of drop) {
+          delete draft.entries[key]
+          delete draft.used[key]
+        }
+      }),
+    )
+  }
+
+  function storeSetup(key: string, next: SessionSetup) {
+    setSetupStore("entries", key, next)
+    setSetupStore("used", key, Date.now())
+    pruneSetupStore()
+  }
+
+  function snapshotSetup() {
+    const currentAgent = local.agent.current()
+    const currentModel = local.model.current()
+    if (!currentAgent || !currentModel) return undefined
+    return {
+      agent: currentAgent.name,
+      model: { providerID: currentModel.provider.id, modelID: currentModel.id },
+      variant: local.model.variant.current(),
+      modeId: local.mode.current()?.id,
+      thinking: local.model.thinking.current(),
+    }
+  }
+
+  function restoreSetup(setup: SessionSetup, key: string) {
+    setRestoringSetup(true)
+    if (setup.modeId) local.mode.set(setup.modeId)
+    queueMicrotask(() => {
+      if (activeSetupKey() !== key) {
+        setRestoringSetup(false)
+        return
+      }
+      if (setup.agent) local.agent.set(setup.agent)
+      const model = setup.model
+      if (model) local.model.set(model)
+      if (model) local.model.variant.set(setup.variant)
+      if (setup.thinking !== undefined) local.model.thinking.set(setup.thinking)
+      setRestoringSetup(false)
+    })
+  }
+
   const renderedUserMessages = createMemo(() => {
     const messages = sessionMessages.visibleUserMessages()
     const limit = store.turnLimit
@@ -185,18 +272,99 @@ export function SessionPane(props: SessionPaneProps) {
     ),
   )
 
-  // Sync agent/model from last message
+  createEffect(
+    on(
+      () => [setupKey(), setupReady(), info()?.mode?.id] as const,
+      ([key, ready, sessionModeId]) => {
+        if (props.mode !== "single") return
+        if (!ready) return
+        setActiveSetupKey(key)
+        setPendingSetupRestore(false)
+        if (!key) return
+        const id = sessionId()
+        if (!id) return
+        const cached = untrack(() => setupStore.entries[key])
+        const modeId = cached?.modeId ?? sessionModeId
+        if (cached) {
+          restoreSetup({ ...cached, modeId }, key)
+          return
+        }
+        const msg = untrack(() => sessionMessages.lastUserMessage())
+        if (!msg) {
+          const messages = sync.data.message[id]
+          if (messages === undefined) {
+            if (modeId) restoreSetup({ modeId }, key)
+            setPendingSetupRestore(true)
+            return
+          }
+          if (modeId) restoreSetup({ modeId }, key)
+          return
+        }
+        const recovered: SessionSetup = {
+          agent: msg.agent,
+          model: msg.model,
+          variant: msg.variant,
+          modeId,
+          thinking: msg.thinking,
+        }
+        restoreSetup(recovered, key)
+        storeSetup(key, recovered)
+      },
+    ),
+  )
+
   createEffect(
     on(
       () => sessionMessages.lastUserMessage()?.id,
       () => {
+        if (props.mode !== "single") return
+        if (!pendingSetupRestore()) return
+        const key = setupKey()
+        if (!key) return
+        if (!setupReady()) return
+        const cached = untrack(() => setupStore.entries[key])
+        if (cached) {
+          setPendingSetupRestore(false)
+          return
+        }
         const msg = sessionMessages.lastUserMessage()
         if (!msg) return
-        if (msg.agent) local.agent.set(msg.agent)
-        if (msg.model) local.model.set(msg.model)
+        const recovered: SessionSetup = {
+          agent: msg.agent,
+          model: msg.model,
+          variant: msg.variant,
+          modeId: info()?.mode?.id,
+          thinking: msg.thinking,
+        }
+        restoreSetup(recovered, key)
+        storeSetup(key, recovered)
+        setPendingSetupRestore(false)
       },
     ),
   )
+
+  createEffect(() => {
+    if (props.mode !== "single") return
+    const key = activeSetupKey()
+    if (!key) return
+    if (!setupReady()) return
+    if (restoringSetup()) return
+    if (pendingSetupRestore()) return
+    const next = snapshotSetup()
+    if (!next) return
+    storeSetup(key, next)
+  })
+
+  createEffect(() => {
+    if (props.mode !== "single") return
+    if (!pendingSetupRestore()) return
+    const id = sessionId()
+    if (!id) return
+    const messages = sync.data.message[id]
+    if (messages === undefined) return
+    if (messages.length > 0) return
+    setPendingSetupRestore(false)
+  })
 
   // Reset user interaction on session change
   createEffect(

@@ -22,7 +22,6 @@ import { ShiftingGradient, GRAIN_DATA_URI } from "@/components/shifting-gradient
 import { useTheme } from "@opencode-ai/ui/theme"
 import { showToast } from "@opencode-ai/ui/toast"
 import { MultiPanePromptPanel } from "@/components/multi-pane/prompt-panel"
-import { MultiPaneKanbanView } from "@/components/multi-pane/kanban-view"
 import { PaneHome } from "@/components/multi-pane/pane-home"
 import { getPaneProjectLabel, getPaneState, getPaneTitle } from "@/utils/pane"
 import { useCommand } from "@/context/command"
@@ -496,8 +495,7 @@ function MultiPaneContent() {
             </div>
           }
         >
-          <Show when={layout.multiPane.view() === "grid"} fallback={<MultiPaneKanbanView panes={visiblePanes()} />}>
-            <div class="flex-1 min-h-0 flex">
+          <div class="flex-1 min-h-0 flex">
               <div class="flex-1 min-w-0 min-h-0 flex flex-col">
                 <DragDropProvider
                   onDragStart={handlePaneDragStart}
@@ -566,7 +564,6 @@ function MultiPaneContent() {
               </Show>
             </div>
             <GlobalPromptWrapper />
-          </Show>
         </Show>
       </div>
     </div>
