@@ -38,6 +38,7 @@ import { SessionCompaction } from "../session/compaction"
 import { SessionRevert } from "../session/revert"
 import { lazy } from "../util/lazy"
 import { Todo } from "../session/todo"
+import { ClaudeAgentProcessor } from "../session/claude-agent-processor"
 import { InstanceBootstrap } from "../project/bootstrap"
 import { MCP } from "../mcp"
 import { Storage } from "../storage/storage"
@@ -497,6 +498,38 @@ export namespace Server {
 
         .route("/project", ProjectRoute)
         .route("/claude-plugin", ClaudePluginRoute)
+        .get(
+          "/claude-code/commands",
+          describeRoute({
+            summary: "List Claude Code slash commands",
+            description: "Get the slash commands supported by Claude Code.",
+            operationId: "claude-code.commands",
+            responses: {
+              200: {
+                description: "List of slash commands",
+                content: {
+                  "application/json": {
+                    schema: resolver(
+                      z.array(
+                        z
+                          .object({
+                            name: z.string(),
+                            description: z.string().optional(),
+                            argumentHint: z.string().optional(),
+                          })
+                          .meta({ ref: "ClaudeCodeSlashCommand" }),
+                      ),
+                    ),
+                  },
+                },
+              },
+            },
+          }),
+          async (c) => {
+            const commands = await ClaudeAgentProcessor.supportedCommands()
+            return c.json(commands)
+          },
+        )
         .route("/question", QuestionRoute)
         .route("/theme", ThemeRoute)
         .get(

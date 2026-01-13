@@ -776,27 +776,6 @@ export type Session = {
   }
   mode?: {
     id: string
-    settings?: {
-      ohMyOpenCode?: {
-        sisyphusAgent?: {
-          disabled?: boolean
-          defaultBuilderEnabled?: boolean
-          plannerEnabled?: boolean
-          replacePlan?: boolean
-        }
-        disabledAgents?: Array<string>
-        disabledHooks?: Array<string>
-        claudeCode?: {
-          mcp?: boolean
-          commands?: boolean
-          skills?: boolean
-          agents?: boolean
-          hooks?: boolean
-          plugins?: boolean
-        }
-        autoUpdate?: boolean
-      }
-    }
   }
   worktree?: WorktreeInfo
   worktreeRequested?: boolean
@@ -1047,6 +1026,12 @@ export type ClaudePluginMarketplaceEntry = {
       startupTimeout?: number
     }
   }
+}
+
+export type ClaudeCodeSlashCommand = {
+  name: string
+  description?: string
+  argumentHint?: string
 }
 
 /**
@@ -2714,6 +2699,24 @@ export type ClaudePluginStatsResponses = {
 
 export type ClaudePluginStatsResponse = ClaudePluginStatsResponses[keyof ClaudePluginStatsResponses]
 
+export type ClaudeCodeCommandsData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/claude-code/commands"
+}
+
+export type ClaudeCodeCommandsResponses = {
+  /**
+   * List of slash commands
+   */
+  200: Array<ClaudeCodeSlashCommand>
+}
+
+export type ClaudeCodeCommandsResponse = ClaudeCodeCommandsResponses[keyof ClaudeCodeCommandsResponses]
+
 export type QuestionListData = {
   body?: never
   path?: never
@@ -2802,6 +2805,106 @@ export type QuestionRejectResponses = {
 }
 
 export type QuestionRejectResponse = QuestionRejectResponses[keyof QuestionRejectResponses]
+
+export type ThemeGradientListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/theme/gradient"
+}
+
+export type ThemeGradientListResponses = {
+  /**
+   * List of gradient themes
+   */
+  200: Array<{
+    name: string
+    theme: {
+      name: string
+      saturation: number
+      brightness: number
+      contrast: number
+      blur: number
+      noise: number
+      colors: [string, string, string, string, string]
+    }
+  }>
+}
+
+export type ThemeGradientListResponse = ThemeGradientListResponses[keyof ThemeGradientListResponses]
+
+export type ThemeGradientDeleteData = {
+  body?: never
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/theme/gradient/{name}"
+}
+
+export type ThemeGradientDeleteErrors = {
+  /**
+   * Not found
+   */
+  404: NotFoundError
+}
+
+export type ThemeGradientDeleteError = ThemeGradientDeleteErrors[keyof ThemeGradientDeleteErrors]
+
+export type ThemeGradientDeleteResponses = {
+  /**
+   * Theme deleted successfully
+   */
+  200: {
+    success: boolean
+  }
+}
+
+export type ThemeGradientDeleteResponse = ThemeGradientDeleteResponses[keyof ThemeGradientDeleteResponses]
+
+export type ThemeGradientSaveData = {
+  body?: {
+    name: string
+    saturation: number
+    brightness: number
+    contrast: number
+    blur: number
+    noise: number
+    colors: [string, string, string, string, string]
+  }
+  path: {
+    name: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/theme/gradient/{name}"
+}
+
+export type ThemeGradientSaveErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type ThemeGradientSaveError = ThemeGradientSaveErrors[keyof ThemeGradientSaveErrors]
+
+export type ThemeGradientSaveResponses = {
+  /**
+   * Theme saved successfully
+   */
+  200: {
+    success: boolean
+    path: string
+  }
+}
+
+export type ThemeGradientSaveResponse = ThemeGradientSaveResponses[keyof ThemeGradientSaveResponses]
 
 export type PtyListData = {
   body?: never
@@ -3239,27 +3342,6 @@ export type SessionCreateData = {
     worktreeCleanup?: "ask" | "always" | "never"
     mode?: {
       id: string
-      settings?: {
-        ohMyOpenCode?: {
-          sisyphusAgent?: {
-            disabled?: boolean
-            defaultBuilderEnabled?: boolean
-            plannerEnabled?: boolean
-            replacePlan?: boolean
-          }
-          disabledAgents?: Array<string>
-          disabledHooks?: Array<string>
-          claudeCode?: {
-            mcp?: boolean
-            commands?: boolean
-            skills?: boolean
-            agents?: boolean
-            hooks?: boolean
-            plugins?: boolean
-          }
-          autoUpdate?: boolean
-        }
-      }
     }
   }
   path?: never
@@ -3391,27 +3473,6 @@ export type SessionUpdateData = {
     }
     mode?: {
       id: string
-      settings?: {
-        ohMyOpenCode?: {
-          sisyphusAgent?: {
-            disabled?: boolean
-            defaultBuilderEnabled?: boolean
-            plannerEnabled?: boolean
-            replacePlan?: boolean
-          }
-          disabledAgents?: Array<string>
-          disabledHooks?: Array<string>
-          claudeCode?: {
-            mcp?: boolean
-            commands?: boolean
-            skills?: boolean
-            agents?: boolean
-            hooks?: boolean
-            plugins?: boolean
-          }
-          autoUpdate?: boolean
-        }
-      }
     }
   }
   path: {
@@ -3788,27 +3849,6 @@ export type SessionPromptData = {
     claudeCodeFlow?: boolean
     mode?: {
       id: string
-      settings?: {
-        ohMyOpenCode?: {
-          sisyphusAgent?: {
-            disabled?: boolean
-            defaultBuilderEnabled?: boolean
-            plannerEnabled?: boolean
-            replacePlan?: boolean
-          }
-          disabledAgents?: Array<string>
-          disabledHooks?: Array<string>
-          claudeCode?: {
-            mcp?: boolean
-            commands?: boolean
-            skills?: boolean
-            agents?: boolean
-            hooks?: boolean
-            plugins?: boolean
-          }
-          autoUpdate?: boolean
-        }
-      }
     }
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
@@ -4022,27 +4062,6 @@ export type SessionPromptAsyncData = {
     claudeCodeFlow?: boolean
     mode?: {
       id: string
-      settings?: {
-        ohMyOpenCode?: {
-          sisyphusAgent?: {
-            disabled?: boolean
-            defaultBuilderEnabled?: boolean
-            plannerEnabled?: boolean
-            replacePlan?: boolean
-          }
-          disabledAgents?: Array<string>
-          disabledHooks?: Array<string>
-          claudeCode?: {
-            mcp?: boolean
-            commands?: boolean
-            skills?: boolean
-            agents?: boolean
-            hooks?: boolean
-            plugins?: boolean
-          }
-          autoUpdate?: boolean
-        }
-      }
     }
     parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
   }
@@ -4087,27 +4106,6 @@ export type SessionCommandData = {
     variant?: string
     mode?: {
       id: string
-      settings?: {
-        ohMyOpenCode?: {
-          sisyphusAgent?: {
-            disabled?: boolean
-            defaultBuilderEnabled?: boolean
-            plannerEnabled?: boolean
-            replacePlan?: boolean
-          }
-          disabledAgents?: Array<string>
-          disabledHooks?: Array<string>
-          claudeCode?: {
-            mcp?: boolean
-            commands?: boolean
-            skills?: boolean
-            agents?: boolean
-            hooks?: boolean
-            plugins?: boolean
-          }
-          autoUpdate?: boolean
-        }
-      }
     }
     parts?: Array<{
       id?: string
@@ -4162,27 +4160,6 @@ export type SessionShellData = {
     command: string
     mode?: {
       id: string
-      settings?: {
-        ohMyOpenCode?: {
-          sisyphusAgent?: {
-            disabled?: boolean
-            defaultBuilderEnabled?: boolean
-            plannerEnabled?: boolean
-            replacePlan?: boolean
-          }
-          disabledAgents?: Array<string>
-          disabledHooks?: Array<string>
-          claudeCode?: {
-            mcp?: boolean
-            commands?: boolean
-            skills?: boolean
-            agents?: boolean
-            hooks?: boolean
-            plugins?: boolean
-          }
-          autoUpdate?: boolean
-        }
-      }
     }
   }
   path: {

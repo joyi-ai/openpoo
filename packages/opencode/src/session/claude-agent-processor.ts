@@ -157,6 +157,12 @@ export namespace ClaudeAgentProcessor {
     maxThinkingTokens?: number
   }
 
+  export type ClaudeSlashCommand = {
+    name: string
+    description?: string
+    argumentHint?: string
+  }
+
   interface ProcessContext {
     sessionID: string
     messageID: string
@@ -738,6 +744,53 @@ export namespace ClaudeAgentProcessor {
     // No auth found - rely on Claude Code CLI's own authentication
     log.info("no auth found, relying on Claude Code CLI authentication")
     return env
+  }
+
+  export async function supportedCommands(): Promise<ClaudeSlashCommand[]> {
+    const empty: ClaudeSlashCommand[] = []
+    const claudeExecutable = await findClaudeCodeExecutable()
+    if (!claudeExecutable) {
+      log.warn("claude code executable not found while listing slash commands")
+      return empty
+    }
+
+    const authEnv = await getAuthEnv()
+    const envVars: Record<string, string | undefined> = {
+      ...globalThis.process.env,
+      ...authEnv,
+    }
+
+    const generator = await Promise.resolve()
+      .then(() =>
+        query({
+          prompt: "",
+          options: {
+            cwd: Instance.directory,
+            pathToClaudeCodeExecutable: claudeExecutable,
+            env: envVars,
+            systemPrompt: {
+              type: "preset",
+              preset: "claude_code",
+            },
+            settingSources: ["user", "project", "local"],
+          },
+        }),
+      )
+      .catch((error) => {
+        log.warn("failed to initialize claude code query for slash commands", { error })
+        return undefined
+      })
+
+    if (!generator) return empty
+
+    const commands = await generator.supportedCommands().catch((error) => {
+      log.warn("failed to load claude code slash commands", { error })
+      return empty
+    })
+
+    await generator.interrupt().catch(() => {})
+
+    return commands
   }
 
   /**

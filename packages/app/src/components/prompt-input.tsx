@@ -56,6 +56,12 @@ interface SkillInfo {
   location: string
 }
 
+interface ClaudeCodeSlashCommand {
+  name: string
+  description?: string
+  argumentHint?: string
+}
+
 interface PromptInputProps {
   class?: string
   ref?: (el: HTMLDivElement) => void
@@ -93,13 +99,118 @@ const PLACEHOLDERS = [
   "How do environment variables work here?",
 ]
 
+type CodexSlashCommand = {
+  trigger: string
+  title: string
+  description: string
+  debugOnly?: boolean
+}
+
+const CODEX_SLASH_COMMANDS: CodexSlashCommand[] = [
+  {
+    trigger: "model",
+    title: "Model",
+    description: "choose what model and reasoning effort to use",
+  },
+  {
+    trigger: "approvals",
+    title: "Approvals",
+    description: "choose what Codex can do without approval",
+  },
+  {
+    trigger: "skills",
+    title: "Skills",
+    description: "use skills to improve how Codex performs specific tasks",
+  },
+  {
+    trigger: "review",
+    title: "Review",
+    description: "review my current changes and find issues",
+  },
+  {
+    trigger: "new",
+    title: "New",
+    description: "start a new chat during a conversation",
+  },
+  {
+    trigger: "resume",
+    title: "Resume",
+    description: "resume a saved chat",
+  },
+  {
+    trigger: "init",
+    title: "Init",
+    description: "create an AGENTS.md file with instructions for Codex",
+  },
+  {
+    trigger: "compact",
+    title: "Compact",
+    description: "summarize conversation to prevent hitting the context limit",
+  },
+  {
+    trigger: "diff",
+    title: "Diff",
+    description: "show git diff (including untracked files)",
+  },
+  {
+    trigger: "mention",
+    title: "Mention",
+    description: "mention a file",
+  },
+  {
+    trigger: "status",
+    title: "Status",
+    description: "show current session configuration and token usage",
+  },
+  {
+    trigger: "mcp",
+    title: "MCP",
+    description: "list configured MCP tools",
+  },
+  {
+    trigger: "logout",
+    title: "Logout",
+    description: "log out of Codex",
+  },
+  {
+    trigger: "quit",
+    title: "Quit",
+    description: "exit Codex",
+  },
+  {
+    trigger: "exit",
+    title: "Exit",
+    description: "exit Codex",
+  },
+  {
+    trigger: "feedback",
+    title: "Feedback",
+    description: "send logs to maintainers",
+  },
+  {
+    trigger: "rollout",
+    title: "Rollout",
+    description: "print the rollout file path",
+    debugOnly: true,
+  },
+  {
+    trigger: "test-approval",
+    title: "Test approval",
+    description: "test approval request",
+    debugOnly: true,
+  },
+]
+
+const CODEX_SLASH_COMMANDS_ACTIVE = CODEX_SLASH_COMMANDS.filter((cmd) => import.meta.env.DEV || !cmd.debugOnly)
+const CODEX_SLASH_COMMAND_TRIGGERS = new Set(CODEX_SLASH_COMMANDS_ACTIVE.map((cmd) => cmd.trigger))
+
 interface SlashCommand {
   id: string
   trigger: string
   title: string
   description?: string
   keybind?: string
-  type: "builtin" | "custom" | "skill"
+  type: "builtin" | "custom" | "skill" | "codex" | "claude-code"
 }
 
 const WorktreeToggleButton: Component = () => {
@@ -200,6 +311,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     if (!value) return ""
     return value.id
   }
+  const isClaudeCodeMode = createMemo(() => local.mode.current()?.id === "claude-code")
 
   const [store, setStore] = createStore<{
     popover: "at" | "slash" | null
@@ -469,9 +581,71 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     }
   })
 
+  const [claudeCommands] = createResource(
+    () => (isClaudeCodeMode() ? sdk.directory : undefined),
+    () =>
+      sdk.client.claudeCode
+        .commands()
+        .then((response) => response.data ?? [])
+        .catch(() => [] as ClaudeCodeSlashCommand[]),
+  )
+
+  const claudeCommandTriggers = createMemo(() => {
+    if (!isClaudeCodeMode()) return new Set<string>()
+    return new Set((claudeCommands() ?? []).map((cmd) => cmd.name))
+  })
+
   const slashCommands = createMemo<SlashCommand[]>(() => {
+    const isCodexMode = local.mode.current()?.id === "codex"
+    const codexCommands = isCodexMode
+      ? CODEX_SLASH_COMMANDS_ACTIVE.map((cmd) => ({
+          id: `codex.${cmd.trigger}`,
+          trigger: cmd.trigger,
+          title: cmd.title,
+          description: cmd.description,
+          type: "codex" as const,
+        }))
+      : []
+
+    const claudeCodeCommands = isClaudeCodeMode()
+      ? (claudeCommands() ?? []).map((cmd) => ({
+          id: `claude-code.${cmd.name}`,
+          trigger: cmd.name,
+          title: cmd.name,
+          description: cmd.description ?? cmd.argumentHint,
+          type: "claude-code" as const,
+        }))
+      : []
+
+    const blockedTriggers = new Set([
+      ...(isCodexMode ? Array.from(CODEX_SLASH_COMMAND_TRIGGERS) : []),
+      ...Array.from(claudeCommandTriggers()),
+    ])
+
+    const custom = sync.data.command
+      .filter((cmd) => !blockedTriggers.has(cmd.name))
+      .map((cmd) => ({
+        id: `custom.${cmd.name}`,
+        trigger: cmd.name,
+        title: cmd.name,
+        description: cmd.description,
+        type: "custom" as const,
+      }))
+
+    // Add skills as slash commands
+    const skillCommands = (skills() ?? [])
+      .filter((skill) => !blockedTriggers.has(skill.name))
+      .map((skill) => ({
+        id: `skill.${skill.name}`,
+        trigger: skill.name,
+        title: skill.name,
+        description: skill.description,
+        type: "skill" as const,
+      }))
+
     const builtin = command.options
       .filter((opt) => !opt.disabled && !opt.id.startsWith("suggested.") && opt.slash)
+      .filter((opt) => !blockedTriggers.has(opt.slash ?? ""))
       .map((opt) => ({
         id: opt.id,
         trigger: opt.slash!,
@@ -481,31 +655,14 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         type: "builtin" as const,
       }))
 
-    const custom = sync.data.command.map((cmd) => ({
-      id: `custom.${cmd.name}`,
-      trigger: cmd.name,
-      title: cmd.name,
-      description: cmd.description,
-      type: "custom" as const,
-    }))
-
-    // Add skills as slash commands
-    const skillCommands = (skills() ?? []).map((skill) => ({
-      id: `skill.${skill.name}`,
-      trigger: skill.name,
-      title: skill.name,
-      description: skill.description,
-      type: "skill" as const,
-    }))
-
-    return [...skillCommands, ...custom, ...builtin]
+    return [...codexCommands, ...claudeCodeCommands, ...skillCommands, ...custom, ...builtin]
   })
 
   const handleSlashSelect = (cmd: SlashCommand | undefined) => {
     if (!cmd) return
     setStore("popover", null)
 
-    if (cmd.type === "custom" || cmd.type === "skill") {
+    if (cmd.type === "custom" || cmd.type === "skill" || cmd.type === "codex" || cmd.type === "claude-code") {
       const text = `/${cmd.trigger} `
       editorRef.innerHTML = ""
       editorRef.textContent = text
@@ -1430,9 +1587,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       }
       const baseAgent = currentAgent.name
       const baseVariant = local.model.variant.current()
-      const isClaudeCodeMode = local.mode.current()?.id === "claude-code"
-      const baseThinking = isClaudeCodeMode ? local.model.thinking.current() : undefined
-      const baseClaudeCodeFlow = isClaudeCodeMode ? true : undefined
+      const inClaudeCodeMode = isClaudeCodeMode()
+      const baseThinking = inClaudeCodeMode ? local.model.thinking.current() : undefined
+      const baseClaudeCodeFlow = inClaudeCodeMode ? true : undefined
 
       if (isShellMode) {
         sdk.client.session
@@ -1465,32 +1622,36 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       if (text.startsWith("/")) {
         const [cmdName, ...args] = text.split(" ")
         const commandName = cmdName.slice(1)
-        const customCommand = sync.data.command.find((c) => c.name === commandName)
-        if (customCommand) {
-          sdk.client.session
-            .command({
-              sessionID: existing.id,
-              command: commandName,
-              arguments: args.join(" "),
-              agent: baseAgent,
-              model: `${baseModel.providerID}/${baseModel.modelID}`,
-              variant: baseVariant,
-              mode: modePayload(),
-            })
-            .then((response) => {
-              const data = response.data
-              if (!data) return
-              sync.session.mergeMessage({ info: data.info, parts: data.parts ?? [] })
-            })
-            .catch((e) => {
-              console.error("Failed to send command", e)
-              showToast({
-                variant: "error",
-                title: "Failed to send command",
-                description: "Please try again.",
+        const isCodexCommand = local.mode.current()?.id === "codex" && CODEX_SLASH_COMMAND_TRIGGERS.has(commandName)
+        const isClaudeCodeCommand = isClaudeCodeMode() && claudeCommandTriggers().has(commandName)
+        if (!isCodexCommand && !isClaudeCodeCommand) {
+          const customCommand = sync.data.command.find((c) => c.name === commandName)
+          if (customCommand) {
+            sdk.client.session
+              .command({
+                sessionID: existing.id,
+                command: commandName,
+                arguments: args.join(" "),
+                agent: baseAgent,
+                model: `${baseModel.providerID}/${baseModel.modelID}`,
+                variant: baseVariant,
+                mode: modePayload(),
               })
-            })
-          return
+              .then((response) => {
+                const data = response.data
+                if (!data) return
+                sync.session.mergeMessage({ info: data.info, parts: data.parts ?? [] })
+              })
+              .catch((e) => {
+                console.error("Failed to send command", e)
+                showToast({
+                  variant: "error",
+                  title: "Failed to send command",
+                  description: "Please try again.",
+                })
+              })
+            return
+          }
         }
       }
 
@@ -1660,6 +1821,16 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                         <Show when={cmd.type === "custom"}>
                           <span class="text-11-regular text-text-subtle px-1.5 py-0.5 bg-surface-base rounded">
                             custom
+                          </span>
+                        </Show>
+                        <Show when={cmd.type === "claude-code"}>
+                          <span class="text-11-regular text-text-subtle px-1.5 py-0.5 bg-surface-base rounded">
+                            claude code
+                          </span>
+                        </Show>
+                        <Show when={cmd.type === "codex"}>
+                          <span class="text-11-regular text-text-subtle px-1.5 py-0.5 bg-surface-base rounded">
+                            codex
                           </span>
                         </Show>
                         <Show when={command.keybind(cmd.id)}>

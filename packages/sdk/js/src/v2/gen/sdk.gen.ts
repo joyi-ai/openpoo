@@ -15,6 +15,7 @@ import type {
   AuthGetResponses,
   AuthSetErrors,
   AuthSetResponses,
+  ClaudeCodeCommandsResponses,
   ClaudePluginAgentsResponses,
   ClaudePluginCommandsResponses,
   ClaudePluginDisableErrors,
@@ -168,6 +169,11 @@ import type {
   SkillListResponses,
   SubtaskPartInput,
   TextPartInput,
+  ThemeGradientDeleteErrors,
+  ThemeGradientDeleteResponses,
+  ThemeGradientListResponses,
+  ThemeGradientSaveErrors,
+  ThemeGradientSaveResponses,
   ToolIdsErrors,
   ToolIdsResponses,
   ToolListErrors,
@@ -663,6 +669,27 @@ export class ClaudePlugin extends HeyApiClient {
   marketplace2 = new Marketplace({ client: this.client })
 }
 
+export class ClaudeCode extends HeyApiClient {
+  /**
+   * List Claude Code slash commands
+   *
+   * Get the slash commands supported by Claude Code.
+   */
+  public commands<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<ClaudeCodeCommandsResponses, unknown, ThrowOnError>({
+      url: "/claude-code/commands",
+      ...options,
+      ...params,
+    })
+  }
+}
+
 export class Question extends HeyApiClient {
   /**
    * List pending questions
@@ -749,6 +776,122 @@ export class Question extends HeyApiClient {
       ...params,
     })
   }
+}
+
+export class Gradient extends HeyApiClient {
+  /**
+   * List gradient themes
+   *
+   * Get a list of custom gradient themes saved in the project.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<ThemeGradientListResponses, unknown, ThrowOnError>({
+      url: "/theme/gradient",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Delete gradient theme
+   *
+   * Delete a custom gradient theme from the project.
+   */
+  public delete<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "name" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<
+      ThemeGradientDeleteResponses,
+      ThemeGradientDeleteErrors,
+      ThrowOnError
+    >({
+      url: "/theme/gradient/{name}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Save gradient theme
+   *
+   * Save a custom gradient theme to the project.
+   */
+  public save<ThrowOnError extends boolean = false>(
+    parameters: {
+      path_name: string
+      directory?: string
+      body_name?: string
+      saturation?: number
+      brightness?: number
+      contrast?: number
+      blur?: number
+      noise?: number
+      colors?: [string, string, string, string, string]
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            {
+              in: "path",
+              key: "path_name",
+              map: "name",
+            },
+            { in: "query", key: "directory" },
+            {
+              in: "body",
+              key: "body_name",
+              map: "name",
+            },
+            { in: "body", key: "saturation" },
+            { in: "body", key: "brightness" },
+            { in: "body", key: "contrast" },
+            { in: "body", key: "blur" },
+            { in: "body", key: "noise" },
+            { in: "body", key: "colors" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<ThemeGradientSaveResponses, ThemeGradientSaveErrors, ThrowOnError>({
+      url: "/theme/gradient/{name}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Theme extends HeyApiClient {
+  gradient = new Gradient({ client: this.client })
 }
 
 export class Pty extends HeyApiClient {
@@ -1331,27 +1474,6 @@ export class Session extends HeyApiClient {
       worktreeCleanup?: "ask" | "always" | "never"
       mode?: {
         id: string
-        settings?: {
-          ohMyOpenCode?: {
-            sisyphusAgent?: {
-              disabled?: boolean
-              defaultBuilderEnabled?: boolean
-              plannerEnabled?: boolean
-              replacePlan?: boolean
-            }
-            disabledAgents?: Array<string>
-            disabledHooks?: Array<string>
-            claudeCode?: {
-              mcp?: boolean
-              commands?: boolean
-              skills?: boolean
-              agents?: boolean
-              hooks?: boolean
-              plugins?: boolean
-            }
-            autoUpdate?: boolean
-          }
-        }
       }
     },
     options?: Options<never, ThrowOnError>,
@@ -1480,27 +1602,6 @@ export class Session extends HeyApiClient {
       }
       mode?: {
         id: string
-        settings?: {
-          ohMyOpenCode?: {
-            sisyphusAgent?: {
-              disabled?: boolean
-              defaultBuilderEnabled?: boolean
-              plannerEnabled?: boolean
-              replacePlan?: boolean
-            }
-            disabledAgents?: Array<string>
-            disabledHooks?: Array<string>
-            claudeCode?: {
-              mcp?: boolean
-              commands?: boolean
-              skills?: boolean
-              agents?: boolean
-              hooks?: boolean
-              plugins?: boolean
-            }
-            autoUpdate?: boolean
-          }
-        }
       }
     },
     options?: Options<never, ThrowOnError>,
@@ -1863,27 +1964,6 @@ export class Session extends HeyApiClient {
       claudeCodeFlow?: boolean
       mode?: {
         id: string
-        settings?: {
-          ohMyOpenCode?: {
-            sisyphusAgent?: {
-              disabled?: boolean
-              defaultBuilderEnabled?: boolean
-              plannerEnabled?: boolean
-              replacePlan?: boolean
-            }
-            disabledAgents?: Array<string>
-            disabledHooks?: Array<string>
-            claudeCode?: {
-              mcp?: boolean
-              commands?: boolean
-              skills?: boolean
-              agents?: boolean
-              hooks?: boolean
-              plugins?: boolean
-            }
-            autoUpdate?: boolean
-          }
-        }
       }
       parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
     },
@@ -2010,27 +2090,6 @@ export class Session extends HeyApiClient {
       claudeCodeFlow?: boolean
       mode?: {
         id: string
-        settings?: {
-          ohMyOpenCode?: {
-            sisyphusAgent?: {
-              disabled?: boolean
-              defaultBuilderEnabled?: boolean
-              plannerEnabled?: boolean
-              replacePlan?: boolean
-            }
-            disabledAgents?: Array<string>
-            disabledHooks?: Array<string>
-            claudeCode?: {
-              mcp?: boolean
-              commands?: boolean
-              skills?: boolean
-              agents?: boolean
-              hooks?: boolean
-              plugins?: boolean
-            }
-            autoUpdate?: boolean
-          }
-        }
       }
       parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>
     },
@@ -2087,27 +2146,6 @@ export class Session extends HeyApiClient {
       variant?: string
       mode?: {
         id: string
-        settings?: {
-          ohMyOpenCode?: {
-            sisyphusAgent?: {
-              disabled?: boolean
-              defaultBuilderEnabled?: boolean
-              plannerEnabled?: boolean
-              replacePlan?: boolean
-            }
-            disabledAgents?: Array<string>
-            disabledHooks?: Array<string>
-            claudeCode?: {
-              mcp?: boolean
-              commands?: boolean
-              skills?: boolean
-              agents?: boolean
-              hooks?: boolean
-              plugins?: boolean
-            }
-            autoUpdate?: boolean
-          }
-        }
       }
       parts?: Array<{
         id?: string
@@ -2168,27 +2206,6 @@ export class Session extends HeyApiClient {
       command?: string
       mode?: {
         id: string
-        settings?: {
-          ohMyOpenCode?: {
-            sisyphusAgent?: {
-              disabled?: boolean
-              defaultBuilderEnabled?: boolean
-              plannerEnabled?: boolean
-              replacePlan?: boolean
-            }
-            disabledAgents?: Array<string>
-            disabledHooks?: Array<string>
-            claudeCode?: {
-              mcp?: boolean
-              commands?: boolean
-              skills?: boolean
-              agents?: boolean
-              hooks?: boolean
-              plugins?: boolean
-            }
-            autoUpdate?: boolean
-          }
-        }
       }
     },
     options?: Options<never, ThrowOnError>,
@@ -3593,7 +3610,11 @@ export class OpencodeClient extends HeyApiClient {
 
   claudePlugin = new ClaudePlugin({ client: this.client })
 
+  claudeCode = new ClaudeCode({ client: this.client })
+
   question = new Question({ client: this.client })
+
+  theme = new Theme({ client: this.client })
 
   pty = new Pty({ client: this.client })
 
