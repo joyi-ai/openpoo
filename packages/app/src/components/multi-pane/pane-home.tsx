@@ -2,6 +2,7 @@ import { Show, createEffect, createMemo, createSignal } from "solid-js"
 import { useMultiPane } from "@/context/multi-pane"
 import { HomeScreen } from "@/components/home-screen"
 import { usePreferredProject } from "@/hooks/use-preferred-project"
+import { useTheme } from "@opencode-ai/ui/theme"
 
 type PaneHomeProps = {
   paneId: string
@@ -13,6 +14,7 @@ type PaneHomeProps = {
 export function PaneHome(props: PaneHomeProps) {
   const multiPane = useMultiPane()
   const preferredProject = usePreferredProject()
+  const theme = useTheme()
   const [autoSelected, setAutoSelected] = createSignal(false)
 
   const hideLogo = createMemo(() => multiPane.panes().length > 1)
@@ -62,6 +64,18 @@ export function PaneHome(props: PaneHomeProps) {
           classList={{
             "border-border-accent-base": props.isFocused(),
             "border-border-strong-base": !props.isFocused(),
+          }}
+        />
+      </Show>
+      {/* Dim overlay for unfocused panels in multi-pane mode */}
+      <Show when={multiPane.panes().length > 1 && !props.isFocused()}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            "z-index": 20,
+            "background-color": theme.mode() === "light" ? "rgba(0, 0, 0, 0.1)" : "rgba(0, 0, 0, 0.15)",
+            "pointer-events": "none",
           }}
         />
       </Show>

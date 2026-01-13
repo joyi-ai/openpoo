@@ -155,7 +155,7 @@
 
 [data-component="reasoning-part"] {
   width: 100%;
-  opacity: 0.5;
+  opacity: 0.7;
 
   [data-component="markdown"] {
     margin-top: 24px;

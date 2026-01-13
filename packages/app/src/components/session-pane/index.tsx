@@ -547,6 +547,10 @@ export function SessionPane(props: SessionPaneProps) {
               )}
             </For>
           </div>
+          {/* Spacer to prevent content from being hidden behind sticky todo footer */}
+          <Show when={todos().some((t) => t.status !== "completed")}>
+            <div class="h-50 shrink-0" />
+          </Show>
           {/* Todo footer - sticky at bottom, hides when all complete */}
           <SessionTodoFooter todos={todos()} />
         </div>
@@ -609,7 +613,7 @@ export function SessionPane(props: SessionPaneProps) {
             position: "absolute",
             inset: 0,
             "z-index": 20,
-            "background-color": theme.mode() === "light" ? "rgba(0, 0, 0, 0.05)" : "rgba(0, 0, 0, 0.1)",
+            "background-color": theme.mode() === "light" ? "rgba(0, 0, 0, 0.1)" : "rgba(0, 0, 0, 0.15)",
             "pointer-events": "none",
           }}
         />

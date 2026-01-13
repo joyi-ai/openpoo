@@ -94,7 +94,7 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
       >
         <Kobalte.Value<T> data-slot="select-select-trigger-value">
           {(state) => {
-            const selected = state.selectedOption() ?? local.current
+            const selected = local.current ?? state.selectedOption()
             if (!selected) return local.placeholder || ""
             if (local.label) return local.label(selected)
             return selected as string

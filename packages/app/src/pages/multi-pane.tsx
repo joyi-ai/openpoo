@@ -29,11 +29,41 @@ import { getPaneProjectLabel, getPaneState, getPaneTitle } from "@/utils/pane"
 function PaneSyncedProviders(props: { paneId: string; directory: string; children: any }) {
   const sync = useSync()
   const sdk = useSDK()
-  const respond = (input: { sessionID: string; permissionID: string; response: "once" | "always" | "reject" }) =>
+  const respondToPermission = (input: { sessionID: string; permissionID: string; response: "once" | "always" | "reject" }) =>
     sdk.client.permission.respond(input)
 
+  const respondToAskUser = async (input: { requestID: string; answers: Record<string, string> }) => {
+    const response = await fetch(`${sdk.url}/askuser/${input.requestID}/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-opencode-directory": props.directory,
+      },
+      body: JSON.stringify({ answers: input.answers }),
+    })
+    return response.json()
+  }
+
+  const respondToPlanMode = async (input: { requestID: string; approved: boolean }) => {
+    const response = await fetch(`${sdk.url}/planmode/${input.requestID}/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-opencode-directory": props.directory,
+      },
+      body: JSON.stringify({ approved: input.approved }),
+    })
+    return response.json()
+  }
+
   return (
-    <DataProvider data={sync.data} directory={props.directory} onPermissionRespond={respond}>
+    <DataProvider
+      data={sync.data}
+      directory={props.directory}
+      onPermissionRespond={respondToPermission}
+      onAskUserRespond={respondToAskUser}
+      onPlanModeRespond={respondToPlanMode}
+    >
       <LocalProvider>
         <TerminalProvider paneId={props.paneId}>
           <FileProvider>
@@ -49,11 +79,41 @@ function PaneSyncedProviders(props: { paneId: string; directory: string; childre
 function GlobalPromptSynced(props: { paneId: string; directory: string; sessionId?: string }) {
   const sync = useSync()
   const sdk = useSDK()
-  const respond = (input: { sessionID: string; permissionID: string; response: "once" | "always" | "reject" }) =>
+  const respondToPermission = (input: { sessionID: string; permissionID: string; response: "once" | "always" | "reject" }) =>
     sdk.client.permission.respond(input)
 
+  const respondToAskUser = async (input: { requestID: string; answers: Record<string, string> }) => {
+    const response = await fetch(`${sdk.url}/askuser/${input.requestID}/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-opencode-directory": props.directory,
+      },
+      body: JSON.stringify({ answers: input.answers }),
+    })
+    return response.json()
+  }
+
+  const respondToPlanMode = async (input: { requestID: string; approved: boolean }) => {
+    const response = await fetch(`${sdk.url}/planmode/${input.requestID}/reply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-opencode-directory": props.directory,
+      },
+      body: JSON.stringify({ approved: input.approved }),
+    })
+    return response.json()
+  }
+
   return (
-    <DataProvider data={sync.data} directory={props.directory} onPermissionRespond={respond}>
+    <DataProvider
+      data={sync.data}
+      directory={props.directory}
+      onPermissionRespond={respondToPermission}
+      onAskUserRespond={respondToAskUser}
+      onPlanModeRespond={respondToPlanMode}
+    >
       <LocalProvider>
         <TerminalProvider paneId={props.paneId}>
           <FileProvider>
