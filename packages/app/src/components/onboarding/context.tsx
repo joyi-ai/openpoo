@@ -28,6 +28,10 @@ export function OnboardingProvider(props: ParentProps) {
   onMount(() => {
     const isCompleted = localStorage.getItem(STORAGE_KEY) === "true"
     setCompleted(isCompleted)
+    // Auto-start onboarding on first launch
+    if (!isCompleted) {
+      start()
+    }
   })
 
   const start = () => {

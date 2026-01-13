@@ -2,8 +2,6 @@ import { Show, createEffect, createMemo, createSignal } from "solid-js"
 import { useMultiPane } from "@/context/multi-pane"
 import { HomeScreen } from "@/components/home-screen"
 import { usePreferredProject } from "@/hooks/use-preferred-project"
-import { Button } from "@opencode-ai/ui/button"
-import { useOnboarding } from "@/components/onboarding"
 
 type PaneHomeProps = {
   paneId: string
@@ -15,7 +13,6 @@ type PaneHomeProps = {
 export function PaneHome(props: PaneHomeProps) {
   const multiPane = useMultiPane()
   const preferredProject = usePreferredProject()
-  const onboarding = useOnboarding()
   const [autoSelected, setAutoSelected] = createSignal(false)
 
   const hideLogo = createMemo(() => multiPane.panes().length > 1)
@@ -79,18 +76,6 @@ export function PaneHome(props: PaneHomeProps) {
         onProjectSelected={handleProjectSelected}
         onNavigateMulti={handleNavigateMulti}
       />
-
-      {/* Temporary test buttons for onboarding */}
-      <Show when={showThemePicker()}>
-        <div class="fixed bottom-4 left-4 flex gap-2 z-50">
-          <Button size="small" variant="secondary" onClick={() => onboarding.start()}>
-            Start Onboarding
-          </Button>
-          <Button size="small" variant="ghost" onClick={() => onboarding.reset()}>
-            Reset
-          </Button>
-        </div>
-      </Show>
     </div>
   )
 }

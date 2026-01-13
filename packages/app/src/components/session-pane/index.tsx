@@ -561,43 +561,47 @@ export function SessionPane(props: SessionPaneProps) {
           onClick={desktopAutoScroll.handleInteraction}
           class={`${sessionTurnPadding()} flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar`}
         >
-          <div ref={desktopAutoScroll.contentRef} class="flex flex-col gap-12">
-            <For each={renderedUserMessages()}>
-              {(message) => (
-                <SessionTurn
-                  sessionID={sessionId()!}
-                  messageID={message.id}
-                  lastUserMessageID={sessionMessages.lastUserMessage()?.id}
-                  stepsExpanded={store.stepsExpanded[message.id] ?? false}
-                  onStepsExpandedToggle={() => setStore("stepsExpanded", message.id, (x) => !x)}
-                  onUserInteracted={() => setStore("userInteracted", true)}
-                  actions={{
-                    onEdit: messageActions.editMessage,
-                    onRestore: messageActions.restoreCheckpoint,
-                    onRetry: messageActions.retryMessage,
-                    onDelete: messageActions.deleteMessage,
-                  }}
-                  classes={{
-                    root: "min-w-0 w-full relative !h-auto",
-                    content: "flex flex-col justify-between !overflow-visible !h-auto",
-                    container:
-                      "w-full " +
-                      (!showTabs()
-                        ? "max-w-200 mx-auto px-6"
-                        : sessionMessages.visibleUserMessages().length > 1
-                          ? "pr-6 pl-18"
-                          : "px-6"),
-                  }}
-                />
-              )}
-            </For>
+          <div class="flex min-h-full flex-col">
+            <div ref={desktopAutoScroll.contentRef} class="flex flex-col gap-12">
+              <For each={renderedUserMessages()}>
+                {(message) => (
+                  <SessionTurn
+                    sessionID={sessionId()!}
+                    messageID={message.id}
+                    lastUserMessageID={sessionMessages.lastUserMessage()?.id}
+                    stepsExpanded={store.stepsExpanded[message.id] ?? false}
+                    onStepsExpandedToggle={() => setStore("stepsExpanded", message.id, (x) => !x)}
+                    onUserInteracted={() => setStore("userInteracted", true)}
+                    actions={{
+                      onEdit: messageActions.editMessage,
+                      onRestore: messageActions.restoreCheckpoint,
+                      onRetry: messageActions.retryMessage,
+                      onDelete: messageActions.deleteMessage,
+                    }}
+                    classes={{
+                      root: "min-w-0 w-full relative !h-auto",
+                      content: "flex flex-col justify-between !overflow-visible !h-auto",
+                      container:
+                        "w-full " +
+                        (!showTabs()
+                          ? "max-w-200 mx-auto px-6"
+                          : sessionMessages.visibleUserMessages().length > 1
+                            ? "pr-6 pl-18"
+                            : "px-6"),
+                    }}
+                  />
+                )}
+              </For>
+            </div>
+            {/* Spacer to prevent content from being hidden behind sticky todo footer */}
+            <Show when={todos().some((t) => t.status !== "completed")}>
+              <div class="h-50 shrink-0" />
+            </Show>
+            <div class="mt-auto">
+              {/* Todo footer - sticky at bottom, hides when all complete */}
+              <SessionTodoFooter todos={todos()} />
+            </div>
           </div>
-          {/* Spacer to prevent content from being hidden behind sticky todo footer */}
-          <Show when={todos().some((t) => t.status !== "completed")}>
-            <div class="h-50 shrink-0" />
-          </Show>
-          {/* Todo footer - sticky at bottom, hides when all complete */}
-          <SessionTodoFooter todos={todos()} />
         </div>
       </div>
     </Show>

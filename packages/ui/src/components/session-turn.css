@@ -442,7 +442,7 @@
     overflow-y: auto;
     scroll-behavior: smooth;
     scrollbar-width: none;
-    animation: reasoning-expand 0.4s ease-out;
+    animation: reasoning-fade 0.2s ease-out;
 
     &::-webkit-scrollbar {
       display: none;
@@ -450,15 +450,11 @@
   }
 }
 
-@keyframes reasoning-expand {
+@keyframes reasoning-fade {
   from {
-    height: 0;
-    min-height: 0;
     opacity: 0;
   }
   to {
-    height: 120px;
-    min-height: 120px;
     opacity: 0.9;
   }
 }

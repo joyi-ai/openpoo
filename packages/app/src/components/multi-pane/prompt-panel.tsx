@@ -75,12 +75,14 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
     return `${sdk.directory}:${sessionId}`
   }
 
-  function restorePaneState(paneId: string, session?: SessionCache, key?: string) {
+  function restorePaneState(paneId: string, session?: SessionCache, key?: string, skipModeRestore?: boolean) {
     const cached = paneCache.get(paneId)
     setRestoring(true)
     setActiveKey(key)
-    const modeId = cached?.modeId ?? session?.modeId
-    if (modeId) local.mode.set(modeId)
+    if (!skipModeRestore) {
+      const modeId = cached?.modeId ?? session?.modeId
+      if (modeId) local.mode.set(modeId)
+    }
     queueMicrotask(() => {
       if (props.paneId !== paneId) {
         setRestoring(false)
@@ -188,13 +190,16 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
 
   createEffect(
     on(
-      () => [props.paneId, props.sessionId, sdk.directory, sessionReady()],
-      () => {
-        const paneId = props.paneId
+      () => [props.paneId, props.sessionId, sdk.directory, sessionReady()] as const,
+      ([paneId, sessionId, , ready], prev) => {
         if (!paneId) return
-        const key = sessionKeyFor(props.sessionId)
-        const session = sessionReady() && key ? untrack(() => sessionStore.entries[key]) : undefined
-        restorePaneState(paneId, session, key)
+        const key = sessionKeyFor(sessionId)
+        const session = ready && key ? untrack(() => sessionStore.entries[key]) : undefined
+        // Skip restoring mode when transitioning from empty pane to new session
+        // (the user just created a session, preserve their current mode selection)
+        const prevSessionId = prev?.[1]
+        const isNewSessionFromEmpty = prevSessionId === undefined && sessionId !== undefined
+        restorePaneState(paneId, session, key, isNewSessionFromEmpty)
       },
     ),
   )
