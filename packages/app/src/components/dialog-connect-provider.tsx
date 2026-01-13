@@ -561,6 +561,46 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                     function extractErrorMessage(error: unknown): string {
                       if (!error || typeof error !== "object") return "Invalid authorization code"
                       const err = error as Record<string, unknown>
+
+                      // Handle BadRequestError format: { data: unknown, errors: Array<{...}>, success: false }
+                      if (Array.isArray(err.errors) && err.errors.length > 0) {
+                        const firstError = err.errors[0] as Record<string, unknown>
+                        // Check for name field (e.g., ProviderAuthOauthMissing, ProviderAuthOauthCodeMissing, etc.)
+                        if (typeof firstError.name === "string") {
+                          const name = firstError.name
+                          if (name === "ProviderAuthOauthMissing") {
+                            return "Authorization session expired. Please start the login process again."
+                          }
+                          if (name === "ProviderAuthOauthCodeMissing") {
+                            return "Authorization code is required"
+                          }
+                          if (name === "ProviderAuthOauthCallbackFailed") {
+                            return "Authorization failed. Please check the code and try again."
+                          }
+                          // Format error name for display
+                          return name.replace(/([A-Z])/g, " $1").trim()
+                        }
+                        // Check for message field
+                        if (typeof firstError.message === "string") {
+                          return firstError.message
+                        }
+                      }
+
+                      if (error instanceof Error) {
+                        const name = error.name
+                        if (name === "ProviderAuthOauthMissing") {
+                          return "Authorization session expired. Please start the login process again."
+                        }
+                        if (name === "ProviderAuthOauthCodeMissing") {
+                          return "Authorization code is required"
+                        }
+                        if (name === "ProviderAuthOauthCallbackFailed") {
+                          return "Authorization failed. Please check the code and try again."
+                        }
+                        if (error.message) return error.message
+                        return "Invalid authorization code"
+                      }
+
                       // Handle NamedError format: { name: string, data: object }
                       if (typeof err.name === "string") {
                         if (err.name === "ProviderAuthOauthMissing") {
@@ -574,14 +614,23 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                         }
                         return err.name.replace(/([A-Z])/g, " $1").trim()
                       }
-                      // Handle { errors: [...] } format
-                      if (Array.isArray(err.errors) && err.errors.length > 0) {
-                        const firstError = err.errors[0] as Record<string, unknown>
-                        return (firstError?.message as string) || (firstError?.name as string) || "Invalid authorization code"
+
+                      // Handle error with message property
+                      if (typeof err.message === "string") {
+                        return err.message
                       }
+
                       return "Invalid authorization code"
                     }
 
+                    function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+                      return Promise.race([
+                        promise,
+                        new Promise<T>((_, reject) =>
+                          setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs),
+                        ),
+                      ])
+                    }
                     async function handleSubmit(e: SubmitEvent) {
                       e.preventDefault()
 
@@ -597,25 +646,28 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                       setFormStore("error", undefined)
                       setFormStore("submitting", true)
                       try {
-                        const result = await globalSDK.client.provider.oauth.callback({
-                          providerID: props.provider,
-                          method: store.methodIndex,
-                          code,
-                        })
-                        if (!result.error) {
-                          await complete()
+                        console.log("Submitting OAuth callback:", { providerID: props.provider, method: store.methodIndex, hasCode: !!code })
+                        const result = await withTimeout(
+                          globalSDK.client.provider.oauth.callback({
+                            providerID: props.provider,
+                            method: store.methodIndex,
+                            code,
+                          }),
+                          30000, // 30 second timeout
+                        )
+                        // Handle result with error property (if SDK returns { error } format)
+                        if (result && typeof result === "object" && "error" in result && result.error) {
+                          setFormStore("error", extractErrorMessage(result.error))
                           return
                         }
-                        setFormStore("error", extractErrorMessage(result.error))
+                        console.log("OAuth callback successful")
+                        await complete()
                       } catch (err) {
                         console.error("OAuth callback error:", err)
-                        // Handle both Error objects and thrown response bodies
-                        if (err instanceof Error) {
-                          setFormStore("error", err.message)
-                        } else if (typeof err === "object" && err !== null) {
-                          setFormStore("error", extractErrorMessage(err))
+                        if (err instanceof Error && err.message.includes("timed out")) {
+                          setFormStore("error", "Request timed out. Please check your connection and try again.")
                         } else {
-                          setFormStore("error", "Failed to connect. Please try again.")
+                          setFormStore("error", extractErrorMessage(err))
                         }
                       } finally {
                         setFormStore("submitting", false)
@@ -646,8 +698,10 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                           />
                           <Button class="w-auto" type="submit" size="large" variant="primary" disabled={formStore.submitting}>
                             <Show when={formStore.submitting} fallback="Submit">
-                              <Spinner />
-                              <span>Connecting...</span>
+                              <div class="flex items-center gap-2">
+                                <Spinner />
+                                <span>Connecting...</span>
+                              </div>
                             </Show>
                           </Button>
                         </form>

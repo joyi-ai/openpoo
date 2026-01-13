@@ -46,6 +46,7 @@ import { SessionContextUsage } from "@/components/session-context-usage"
 import { usePlatform } from "@/context/platform"
 import { VoiceButton } from "@/components/voice-button"
 import { FloatingMegaSelector } from "@/components/floating-mega-selector"
+import { SettingsDialog } from "@/components/settings-dialog"
 
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"]
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_IMAGE_TYPES, "application/pdf"]
@@ -99,28 +100,28 @@ const PLACEHOLDERS = [
   "How do environment variables work here?",
 ]
 
+type CodexSlashAction =
+  | { kind: "command"; id: string }
+  | { kind: "review-panel"; tab: "review" | "context" }
+  | { kind: "summarize" }
+  | { kind: "insert"; text: string; popover?: "at" | "slash" }
+  | { kind: "settings" }
+  | { kind: "link"; url: string }
+
 type CodexSlashCommand = {
   trigger: string
   title: string
   description: string
+  action?: CodexSlashAction
   debugOnly?: boolean
 }
 
 const CODEX_SLASH_COMMANDS: CodexSlashCommand[] = [
   {
-    trigger: "model",
-    title: "Model",
-    description: "choose what model and reasoning effort to use",
-  },
-  {
     trigger: "approvals",
     title: "Approvals",
     description: "choose what Codex can do without approval",
-  },
-  {
-    trigger: "skills",
-    title: "Skills",
-    description: "use skills to improve how Codex performs specific tasks",
+    action: { kind: "settings" },
   },
   {
     trigger: "review",
@@ -131,11 +132,7 @@ const CODEX_SLASH_COMMANDS: CodexSlashCommand[] = [
     trigger: "new",
     title: "New",
     description: "start a new chat during a conversation",
-  },
-  {
-    trigger: "resume",
-    title: "Resume",
-    description: "resume a saved chat",
+    action: { kind: "command", id: "session.new" },
   },
   {
     trigger: "init",
@@ -146,63 +143,59 @@ const CODEX_SLASH_COMMANDS: CodexSlashCommand[] = [
     trigger: "compact",
     title: "Compact",
     description: "summarize conversation to prevent hitting the context limit",
+    action: { kind: "summarize" },
   },
   {
     trigger: "diff",
     title: "Diff",
     description: "show git diff (including untracked files)",
+    action: { kind: "review-panel", tab: "review" },
   },
   {
     trigger: "mention",
     title: "Mention",
     description: "mention a file",
+    action: { kind: "insert", text: "@", popover: "at" },
   },
   {
     trigger: "status",
     title: "Status",
     description: "show current session configuration and token usage",
+    action: { kind: "review-panel", tab: "context" },
   },
   {
     trigger: "mcp",
     title: "MCP",
     description: "list configured MCP tools",
-  },
-  {
-    trigger: "logout",
-    title: "Logout",
-    description: "log out of Codex",
-  },
-  {
-    trigger: "quit",
-    title: "Quit",
-    description: "exit Codex",
-  },
-  {
-    trigger: "exit",
-    title: "Exit",
-    description: "exit Codex",
+    action: { kind: "command", id: "mcp.toggle" },
   },
   {
     trigger: "feedback",
     title: "Feedback",
     description: "send logs to maintainers",
-  },
-  {
-    trigger: "rollout",
-    title: "Rollout",
-    description: "print the rollout file path",
-    debugOnly: true,
-  },
-  {
-    trigger: "test-approval",
-    title: "Test approval",
-    description: "test approval request",
-    debugOnly: true,
+    action: { kind: "link", url: "https://opencode.ai/desktop-feedback" },
   },
 ]
 
+const CODEX_SLASH_HIDDEN = new Set([
+  "model",
+  "experimental",
+  "skills",
+  "resume",
+  "logout",
+  "quit",
+  "exit",
+  "rollout",
+  "ps",
+  "test-approval",
+])
 const CODEX_SLASH_COMMANDS_ACTIVE = CODEX_SLASH_COMMANDS.filter((cmd) => import.meta.env.DEV || !cmd.debugOnly)
+const CODEX_SLASH_COMMANDS_BY_TRIGGER = new Map(CODEX_SLASH_COMMANDS_ACTIVE.map((cmd) => [cmd.trigger, cmd]))
 const CODEX_SLASH_COMMAND_TRIGGERS = new Set(CODEX_SLASH_COMMANDS_ACTIVE.map((cmd) => cmd.trigger))
+const CODEX_SLASH_INSERT_TRIGGERS = new Set(
+  CODEX_SLASH_COMMANDS_ACTIVE.filter((cmd) => !cmd.action).map((cmd) => cmd.trigger),
+)
+const CODEX_SLASH_DISABLED = new Set([...CODEX_SLASH_COMMAND_TRIGGERS, ...CODEX_SLASH_HIDDEN])
 
 interface SlashCommand {
   id: string
@@ -211,6 +204,7 @@ interface SlashCommand {
   description?: string
   keybind?: string
   type: "builtin" | "custom" | "skill" | "codex" | "claude-code"
+  action?: CodexSlashAction
 }
 
 const WorktreeToggleButton: Component = () => {
@@ -283,6 +277,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const effectiveSessionId = createMemo(() => props.sessionId ?? params.id)
   const sessionKey = createMemo(() => `${params.dir}${effectiveSessionId() ? "/" + effectiveSessionId() : ""}`)
   const tabs = createMemo(() => layout.tabs(sessionKey()))
+  const view = createMemo(() => layout.view(sessionKey()))
   const activeFile = createMemo(() => {
     const tab = tabs().active()
     if (!tab) return
@@ -581,14 +576,32 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     }
   })
 
-  const [claudeCommands] = createResource(
-    () => (isClaudeCodeMode() ? sdk.directory : undefined),
-    () =>
-      sdk.client.claudeCode
-        .commands()
-        .then((response) => response.data ?? [])
-        .catch(() => [] as ClaudeCodeSlashCommand[]),
-    { initialValue: [] },
+  // Use createSignal + createEffect instead of createResource to avoid triggering Suspense
+  const [claudeCommands, setClaudeCommands] = createSignal<ClaudeCodeSlashCommand[]>([])
+  const [claudeToken, setClaudeToken] = createSignal(0)
+  createEffect(
+    on(
+      () => (isClaudeCodeMode() ? sdk.directory : undefined),
+      (dir) => {
+        const token = claudeToken() + 1
+        setClaudeToken(token)
+        if (!dir) {
+          setClaudeCommands([])
+          return
+        }
+        sdk.client.claudeCode
+          .commands()
+          .then((response) => {
+            if (claudeToken() !== token) return
+            setClaudeCommands(response.data ?? [])
+          })
+          .catch(() => {
+            if (claudeToken() !== token) return
+            setClaudeCommands([])
+          })
+      },
+      { defer: false }, // Run immediately on mount, not just on changes
+    ),
   )
 
   const claudeCommandTriggers = createMemo(() => {
@@ -604,6 +617,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
           trigger: cmd.trigger,
           title: cmd.title,
           description: cmd.description,
+          action: cmd.action,
           type: "codex" as const,
         }))
       : []
@@ -619,7 +633,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       : []
 
     const blockedTriggers = new Set([
-      ...(isCodexMode ? Array.from(CODEX_SLASH_COMMAND_TRIGGERS) : []),
+      ...(isCodexMode ? Array.from(CODEX_SLASH_DISABLED) : []),
       ...Array.from(claudeCommandTriggers()),
     ])
 
@@ -659,9 +673,108 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     return [...codexCommands, ...claudeCodeCommands, ...skillCommands, ...custom, ...builtin]
   })
 
+  const runCodexAction = async (
+    action: CodexSlashAction | undefined,
+    options?: { sessionID?: string; model?: { providerID: string; modelID: string } },
+  ) => {
+    if (!action) return false
+    if (action.kind === "command") {
+      command.trigger(action.id, "slash")
+      return true
+    }
+    if (action.kind === "review-panel") {
+      view().reviewPanel.open()
+      tabs().open(action.tab)
+      return true
+    }
+    if (action.kind === "insert") {
+      const text = action.text
+      editorRef.innerHTML = ""
+      editorRef.textContent = text
+      prompt.set([{ type: "text", content: text, start: 0, end: text.length }], text.length)
+      requestAnimationFrame(() => {
+        editorRef.focus()
+        const range = document.createRange()
+        const sel = window.getSelection()
+        range.selectNodeContents(editorRef)
+        range.collapse(false)
+        sel?.removeAllRanges()
+        sel?.addRange(range)
+      })
+      if (action.popover === "at") {
+        atOnInput("")
+        setStore("popover", "at")
+      } else if (action.popover === "slash") {
+        slashOnInput("")
+        setStore("popover", "slash")
+      } else {
+        setStore("popover", null)
+      }
+      return true
+    }
+    if (action.kind === "settings") {
+      dialog.show(() => <SettingsDialog />)
+      return true
+    }
+    if (action.kind === "link") {
+      platform.openLink(action.url)
+      return true
+    }
+    if (action.kind === "summarize") {
+      const sessionID = options?.sessionID ?? effectiveSessionId()
+      if (!sessionID) {
+        showToast({
+          variant: "error",
+          title: "No active session",
+          description: "Start a session before compacting.",
+        })
+        return true
+      }
+      const localModel = local.model.current()
+      const model =
+        options?.model ?? (localModel ? { providerID: localModel.provider.id, modelID: localModel.id } : undefined)
+      if (!model) {
+        showToast({
+          variant: "error",
+          title: "No model selected",
+          description: "Choose a model before compacting.",
+        })
+        return true
+      }
+      await sdk.client.session
+        .summarize({
+          sessionID,
+          providerID: model.providerID,
+          modelID: model.modelID,
+        })
+        .then(() => {
+          showToast({
+            title: "Compaction started",
+            description: "A summary message will be added to this session.",
+          })
+        })
+        .catch((e) => {
+          showToast({
+            variant: "error",
+            title: "Failed to compact session",
+            description: e.message ?? "Please try again.",
+          })
+        })
+      return true
+    }
+    return false
+  }
+
   const handleSlashSelect = (cmd: SlashCommand | undefined) => {
     if (!cmd) return
     setStore("popover", null)
+
+    if (cmd.type === "codex" && cmd.action) {
+      editorRef.innerHTML = ""
+      prompt.set([{ type: "text", content: "", start: 0, end: 0 }], 0)
+      void runCodexAction(cmd.action)
+      return
+    }
 
     if (cmd.type === "custom" || cmd.type === "skill" || cmd.type === "codex" || cmd.type === "claude-code") {
       const text = `/${cmd.trigger} `
@@ -701,6 +814,15 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   createEffect(
     on(
       () => sync.data.command,
+      () => slashRefetch(),
+      { defer: true },
+    ),
+  )
+
+  // Refetch slash commands when claude commands are loaded
+  createEffect(
+    on(
+      () => claudeCommands(),
       () => slashRefetch(),
       { defer: true },
     ),
@@ -1623,9 +1745,25 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       if (text.startsWith("/")) {
         const [cmdName, ...args] = text.split(" ")
         const commandName = cmdName.slice(1)
-        const isCodexCommand = local.mode.current()?.id === "codex" && CODEX_SLASH_COMMAND_TRIGGERS.has(commandName)
+        const isCodexMode = local.mode.current()?.id === "codex"
+        const codexCommand = isCodexMode ? CODEX_SLASH_COMMANDS_BY_TRIGGER.get(commandName) : undefined
         const isClaudeCodeCommand = isClaudeCodeMode() && claudeCommandTriggers().has(commandName)
-        if (!isCodexCommand && !isClaudeCodeCommand) {
+        const isCodexHidden = isCodexMode && CODEX_SLASH_HIDDEN.has(commandName)
+        if (isCodexHidden) {
+          showToast({
+            variant: "error",
+            title: "Command unavailable",
+            description: `/${commandName} isn't available in Codex mode.`,
+          })
+          return
+        }
+        const codexHandled = isCodexMode
+          ? await runCodexAction(codexCommand?.action, { sessionID: existing.id, model: baseModel })
+          : false
+        if (codexHandled) return
+        const isCodexBlocked = isCodexMode && CODEX_SLASH_COMMAND_TRIGGERS.has(commandName)
+        const allowCustom = (!isCodexBlocked || CODEX_SLASH_INSERT_TRIGGERS.has(commandName)) && !isClaudeCodeCommand
+        if (allowCustom) {
           const customCommand = sync.data.command.find((c) => c.name === commandName)
           if (customCommand) {
             sdk.client.session
@@ -1764,6 +1902,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                         "w-full flex items-center gap-x-2 rounded-md px-2 py-0.5": true,
                         "bg-surface-raised-base-hover": atActive() === atKey(item),
                       }}
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleAtSelect(item)}
                     >
                       <Show
@@ -1810,6 +1949,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                         "w-full flex items-center justify-between gap-4 rounded-md px-2 py-1": true,
                         "bg-surface-raised-base-hover": slashActive() === cmd.id,
                       }}
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSlashSelect(cmd)}
                     >
                       <div class="flex items-center gap-2 min-w-0">

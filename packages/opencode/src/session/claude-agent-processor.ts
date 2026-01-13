@@ -412,6 +412,8 @@ export namespace ClaudeAgentProcessor {
         // or via stream_event for real-time token streaming.
         if (!msg.message?.content) break
         for (const block of msg.message.content) {
+          // Skip non-object blocks
+          if (typeof block !== "object" || block === null) continue
           if ("text" in block && block.text) {
             // Text block - fallback for when streaming is unavailable
             // Check if we already have this content from streaming
@@ -491,10 +493,36 @@ export namespace ClaudeAgentProcessor {
         }
         break
 
-      case "user":
-        // User messages in SDK contain tool results
+      case "user": {
+        // User messages in SDK contain tool results and local command outputs
         if (!msg.message?.content) break
+
+        // Handle string content with local command output tags
+        if (typeof msg.message.content === "string") {
+          const content = msg.message.content
+          // Check for local command output wrapped in <local-command-stdout> tags
+          const localCommandMatch = content.match(/<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/)
+          if (localCommandMatch) {
+            const commandOutput = localCommandMatch[1].trim()
+            if (commandOutput) {
+              const textPart: MessageV2.TextPart = {
+                id: Identifier.ascending("part"),
+                sessionID: ctx.sessionID,
+                messageID: ctx.messageID,
+                type: "text",
+                text: commandOutput,
+                time: { start: Date.now() },
+              }
+              await Session.updatePart(textPart)
+            }
+          }
+          break
+        }
+
+        // Handle array content (tool results)
         for (const block of msg.message.content) {
+          // Skip non-object blocks
+          if (typeof block !== "object" || block === null) continue
           if ("type" in block && block.type === "tool_result") {
             const resultBlock = block as {
               type: "tool_result"
@@ -554,8 +582,9 @@ export namespace ClaudeAgentProcessor {
           }
         }
         break
+      }
 
-      case "result":
+      case "result": {
         // Final result - log completion info
         log.info("agent completed", {
           subtype: msg.subtype,
@@ -563,6 +592,7 @@ export namespace ClaudeAgentProcessor {
           turns: msg.num_turns,
         })
         break
+      }
 
       case "stream_event": {
         // Real-time streaming events (SDKPartialAssistantMessage)
@@ -919,6 +949,7 @@ export namespace ClaudeAgentProcessor {
             "TodoWrite",
             "AskUserQuestion",
             "ExitPlanMode",
+            "Skill",
           ]
 
       // Build SDK agent definitions from OpenCode agents

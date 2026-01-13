@@ -407,8 +407,13 @@ export namespace Session {
   }
 
   export const diff = fn(Identifier.schema("session"), async (sessionID) => {
-    const diffs = await Storage.read<Snapshot.FileDiff[]>(["session_diff", sessionID])
-    return diffs ?? []
+    try {
+      const diffs = await Storage.read<Snapshot.FileDiff[]>(["session_diff", sessionID])
+      return diffs ?? []
+    } catch (e) {
+      if (e instanceof Storage.NotFoundError) return []
+      throw e
+    }
   })
 
   export const messages = fn(
