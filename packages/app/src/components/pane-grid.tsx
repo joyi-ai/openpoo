@@ -80,7 +80,17 @@ export function PaneGrid(props: PaneGridProps) {
     if (!body) return
     const slot = paneRefs.get(id)
     if (slot && body.parentElement !== slot) {
+      // Save scroll positions before DOM move
+      const scrollables = body.querySelectorAll<HTMLElement>(".overflow-y-auto, .overflow-auto, [style*='overflow']")
+      const scrollPositions = Array.from(scrollables).map((el) => ({ el, top: el.scrollTop, left: el.scrollLeft }))
+
       slot.appendChild(body)
+
+      // Restore scroll positions after DOM move
+      for (const { el, top, left } of scrollPositions) {
+        el.scrollTop = top
+        el.scrollLeft = left
+      }
     }
     body.style.position = ""
     body.style.left = ""
@@ -145,7 +155,17 @@ export function PaneGrid(props: PaneGridProps) {
     paneAnimations.get(id)?.cancel()
     paneAnimations.delete(id)
 
+    // Save scroll positions before DOM move
+    const scrollables = body.querySelectorAll<HTMLElement>(".overflow-y-auto, .overflow-auto, [style*='overflow']")
+    const scrollPositions = Array.from(scrollables).map((el) => ({ el, top: el.scrollTop, left: el.scrollLeft }))
+
     overlayRef.appendChild(body)
+
+    // Restore scroll positions after DOM move
+    for (const { el, top, left } of scrollPositions) {
+      el.scrollTop = top
+      el.scrollLeft = left
+    }
     body.style.position = "absolute"
     body.style.left = `${from.left}px`
     body.style.top = `${from.top}px`
@@ -336,7 +356,19 @@ export function PaneGrid(props: PaneGridProps) {
 
         paneAnimations.get(id)?.cancel()
         paneAnimations.delete(id)
+
+        // Save scroll positions before DOM move
+        const scrollables = body.querySelectorAll<HTMLElement>(".overflow-y-auto, .overflow-auto, [style*='overflow']")
+        const scrollPositions = Array.from(scrollables).map((el) => ({ el, top: el.scrollTop, left: el.scrollLeft }))
+
         overlayRef.appendChild(body)
+
+        // Restore scroll positions after DOM move
+        for (const { el, top, left } of scrollPositions) {
+          el.scrollTop = top
+          el.scrollLeft = left
+        }
+
         body.style.position = "absolute"
         body.style.left = `${oldLeft}px`
         body.style.top = `${oldTop}px`

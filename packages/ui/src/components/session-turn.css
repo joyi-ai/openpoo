@@ -27,7 +27,6 @@
     align-self: stretch;
     min-width: 0;
     gap: 28px;
-    overflow-anchor: none;
   }
 
   [data-slot="session-turn-sticky-title"] {
@@ -38,7 +37,6 @@
   [data-slot="session-turn-response-trigger"] {
     position: sticky;
     top: 32px;
-    background-color: var(--background-stronger);
     z-index: 20;
     width: calc(100% + 9px);
     margin-left: -9px;
@@ -403,6 +401,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    margin-bottom: 12px;
   }
 
   [data-slot="session-turn-reasoning-trigger"] {
@@ -441,6 +440,7 @@
     white-space: pre-wrap;
     word-break: break-word;
     overflow-y: auto;
+    scroll-behavior: smooth;
     scrollbar-width: none;
     animation: reasoning-expand 0.4s ease-out;
 

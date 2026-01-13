@@ -144,7 +144,6 @@ export function createAutoScroll(options: AutoScrollOptions) {
 
       if (!el) return
 
-      el.style.overflowAnchor = "none"
       el.addEventListener("wheel", handleWheel, { passive: true })
       el.addEventListener("pointerdown", handlePointerDown)
       el.addEventListener("touchstart", handleTouchStart, { passive: true })

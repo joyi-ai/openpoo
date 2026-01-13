@@ -270,7 +270,7 @@ export namespace SessionProcessor {
                     }
                     snapshot = undefined
                   }
-                  SessionSummary.summarize({
+                  await SessionSummary.summarize({
                     sessionID: input.sessionID,
                     messageID: input.assistantMessage.parentID,
                   })

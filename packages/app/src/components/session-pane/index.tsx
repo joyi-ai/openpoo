@@ -21,7 +21,6 @@ import { useSessionSync } from "@/hooks/use-session-sync"
 import { useSessionCommands } from "@/hooks/use-session-commands"
 import { useMessageActions } from "@/hooks/use-message-actions"
 import { ThemeDropup } from "@/components/theme-dropup"
-import { useTheme } from "@opencode-ai/ui/theme"
 import { SessionPaneHeader } from "./header"
 import { ReviewPanel } from "./review-panel"
 import { ContextTab } from "./context-tab"
@@ -57,7 +56,6 @@ export function SessionPane(props: SessionPaneProps) {
   const multiPane = props.mode === "multi" ? useMultiPane() : undefined
   const notification = useNotification()
   const messageActions = useMessageActions()
-  const theme = useTheme()
   const hasMultiplePanes = createMemo(() =>
     props.mode === "multi" && multiPane ? multiPane.panes().length > 1 : false,
   )
@@ -327,28 +325,15 @@ export function SessionPane(props: SessionPaneProps) {
     if (store.didRestoreScroll[key]) return
     if (renderedUserMessages().length === 0) return
 
-    const saved = view().scroll("session")
-
     // Wait for content to be scrollable - content may not have rendered yet
     if (root.scrollHeight <= root.clientHeight && retries < 10) {
       requestAnimationFrame(() => restoreDesktopScroll(retries + 1))
       return
     }
 
-    if (!saved) {
-      desktopAutoScroll.forceScrollToBottom()
-      setStore("didRestoreScroll", key, true)
-      return
-    }
-
-    if (root.scrollTop !== saved.y) root.scrollTop = saved.y
-    if (root.scrollLeft !== saved.x) root.scrollLeft = saved.x
+    // Always open sessions at the bottom
+    desktopAutoScroll.forceScrollToBottom()
     setStore("didRestoreScroll", key, true)
-
-    if (!working()) return
-    const distanceFromBottom = root.scrollHeight - root.clientHeight - root.scrollTop
-    if (distanceFromBottom < 64) return
-    desktopAutoScroll.handleInteraction()
   }
 
   createEffect(
@@ -561,8 +546,11 @@ export function SessionPane(props: SessionPaneProps) {
   // Multi mode container styles
   const multiContainerClass = () =>
     props.mode === "multi"
-      ? "relative size-full flex flex-col overflow-hidden transition-colors duration-150"
-      : "relative size-full overflow-hidden flex flex-col transition-colors duration-150"
+      ? "relative size-full flex flex-col overflow-hidden transition-all duration-150"
+      : "relative size-full overflow-hidden flex flex-col transition-all duration-150"
+
+  const multiContainerStyle = () =>
+    props.mode === "multi" && hasMultiplePanes() && !isFocused() ? { opacity: 0.5 } : undefined
 
   const multiContainerClassList = () => ({
     "bg-background-base": props.mode === "single",
@@ -591,6 +579,7 @@ export function SessionPane(props: SessionPaneProps) {
       ref={setContainerRef}
       class={multiContainerClass()}
       classList={multiContainerClassList()}
+      style={multiContainerStyle()}
       onMouseDown={props.mode === "multi" ? handleMultiPaneMouseDown : undefined}
       onMouseEnter={props.mode === "multi" ? headerOverlay.handleMouseEnter : undefined}
       onMouseLeave={props.mode === "multi" ? headerOverlay.handleMouseLeave : undefined}
@@ -602,19 +591,6 @@ export function SessionPane(props: SessionPaneProps) {
           classList={{
             "border-border-accent-base": isFocused(),
             "border-border-strong-base": !isFocused(),
-          }}
-        />
-      </Show>
-
-      {/* Dim overlay for unfocused panels in multi-pane mode */}
-      <Show when={props.mode === "multi" && !isFocused()}>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            "z-index": 20,
-            "background-color": theme.mode() === "light" ? "rgba(0, 0, 0, 0.1)" : "rgba(0, 0, 0, 0.15)",
-            "pointer-events": "none",
           }}
         />
       </Show>

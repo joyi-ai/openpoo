@@ -446,7 +446,7 @@ export namespace SessionPrompt {
           })
         }
       }
-      SessionSummary.summarize({
+      await SessionSummary.summarize({
         sessionID,
         messageID: input.userMessageID,
       })
