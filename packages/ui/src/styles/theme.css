@@ -154,6 +154,7 @@
   --text-invert-weak: var(--smoke-dark-alpha-9);
   --text-invert-weaker: var(--smoke-dark-alpha-8);
   --text-invert-strong: var(--smoke-dark-alpha-12);
+  --text-invert-stronger: var(--smoke-light-1);
   --text-interactive-base: var(--cobalt-light-9);
   --text-on-brand-base: var(--smoke-light-alpha-11);
   --text-on-interactive-base: var(--smoke-light-1);
@@ -410,6 +411,7 @@
     --text-invert-weak: var(--smoke-dark-alpha-9);
     --text-invert-weaker: var(--smoke-dark-alpha-8);
     --text-invert-strong: var(--smoke-dark-alpha-12);
+    --text-invert-stronger: var(--smoke-dark-12);
     --text-interactive-base: var(--cobalt-dark-11);
     --text-on-brand-base: var(--smoke-dark-alpha-11);
     --text-on-interactive-base: var(--smoke-dark-12);

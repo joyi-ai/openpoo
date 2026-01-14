@@ -71,22 +71,22 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
         {(ctx) => (
           <>
             <div class="flex items-center gap-2">
-              <span class="text-text-invert-strong">{ctx().tokens}</span>
-              <span class="text-text-invert-base">Tokens</span>
+              <span class="text-text-strong">{ctx().tokens}</span>
+              <span class="text-text-base">Tokens</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-text-invert-strong">{ctx().percentage ?? 0}%</span>
-              <span class="text-text-invert-base">Usage</span>
+              <span class="text-text-strong">{ctx().percentage ?? 0}%</span>
+              <span class="text-text-base">Usage</span>
             </div>
           </>
         )}
       </Show>
       <div class="flex items-center gap-2">
-        <span class="text-text-invert-strong">{cost()}</span>
-        <span class="text-text-invert-base">Cost</span>
+        <span class="text-text-strong">{cost()}</span>
+        <span class="text-text-base">Cost</span>
       </div>
       <Show when={variant() === "button"}>
-        <div class="text-11-regular text-text-invert-base mt-1">Click to view context</div>
+        <div class="text-11-regular text-text-base mt-1">Click to view context</div>
       </Show>
     </div>
   )
