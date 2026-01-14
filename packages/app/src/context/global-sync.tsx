@@ -269,55 +269,70 @@ function createGlobalSync() {
       agent: () => sdk.app.agents().then((x) => setStore("agent", x.data ?? [])),
       config: () => sdk.config.get().then((x) => setStore("config", x.data!)),
     }
-    await Promise.all(Object.values(blockingRequests).map((p) => retry(p).catch((e) => setGlobalStore("error", e))))
-      .then(() => {
-        if (store.status !== "complete") setStore("status", "partial")
-        // non-blocking
-        Promise.all([
-          sdk.path.get().then((x) => setStore("path", x.data!)),
-          sdk.command.list().then((x) => setStore("command", x.data ?? [])),
-          sdk.session.status().then((x) => setStore("session_status", x.data!)),
-          loadSessions(directory),
-          sdk.mcp.status().then((x) => setStore("mcp", x.data!)),
-          sdk.lsp.status().then((x) => setStore("lsp", x.data!)),
-          sdk.vcs.get().then((x) => setStore("vcs", x.data)),
-          sdk.permission.list().then((x) => {
-            const grouped: Record<string, PermissionRequest[]> = {}
-            for (const perm of x.data ?? []) {
-              if (!perm?.id || !perm.sessionID) continue
-              const existing = grouped[perm.sessionID]
-              if (existing) {
-                existing.push(perm)
-                continue
-              }
-              grouped[perm.sessionID] = [perm]
-            }
+    // Per-directory bootstrap failures should NOT set global error (which would unmount entire app)
+    // Instead, log the error and show a toast - the directory will stay in loading state
+    let hasBlockingError = false
+    await Promise.all(
+      Object.values(blockingRequests).map((p) =>
+        retry(p).catch((e) => {
+          hasBlockingError = true
+          console.error("Failed to bootstrap directory:", directory, e)
+          const project = getFilename(directory)
+          showToast({ variant: "error", title: `Failed to load ${project}`, description: e.message })
+        }),
+      ),
+    )
+    if (hasBlockingError) return
 
-            batch(() => {
-              for (const sessionID of Object.keys(store.permission)) {
-                if (grouped[sessionID]) continue
-                setStore("permission", sessionID, [])
-              }
-              for (const [sessionID, permissions] of Object.entries(grouped)) {
-                setStore(
-                  "permission",
-                  sessionID,
-                  reconcile(
-                    permissions
-                      .filter((p) => !!p?.id)
-                      .slice()
-                      .sort((a, b) => a.id.localeCompare(b.id)),
-                    { key: "id" },
-                  ),
-                )
-              }
-            })
-          }),
-        ]).then(() => {
-          setStore("status", "complete")
+    if (store.status !== "complete") setStore("status", "partial")
+    // non-blocking
+    Promise.all([
+      sdk.path.get().then((x) => setStore("path", x.data!)),
+      sdk.command.list().then((x) => setStore("command", x.data ?? [])),
+      sdk.session.status().then((x) => setStore("session_status", x.data!)),
+      loadSessions(directory),
+      sdk.mcp.status().then((x) => setStore("mcp", x.data!)),
+      sdk.lsp.status().then((x) => setStore("lsp", x.data!)),
+      sdk.vcs.get().then((x) => setStore("vcs", x.data)),
+      sdk.permission.list().then((x) => {
+        const grouped: Record<string, PermissionRequest[]> = {}
+        for (const perm of x.data ?? []) {
+          if (!perm?.id || !perm.sessionID) continue
+          const existing = grouped[perm.sessionID]
+          if (existing) {
+            existing.push(perm)
+            continue
+          }
+          grouped[perm.sessionID] = [perm]
+        }
+
+        batch(() => {
+          for (const sessionID of Object.keys(store.permission)) {
+            if (grouped[sessionID]) continue
+            setStore("permission", sessionID, [])
+          }
+          for (const [sessionID, permissions] of Object.entries(grouped)) {
+            setStore(
+              "permission",
+              sessionID,
+              reconcile(
+                permissions
+                  .filter((p) => !!p?.id)
+                  .slice()
+                  .sort((a, b) => a.id.localeCompare(b.id)),
+                { key: "id" },
+              ),
+            )
+          }
         })
+      }),
+    ])
+      .then(() => {
+        setStore("status", "complete")
       })
-      .catch((e) => setGlobalStore("error", e))
+      .catch((e) => {
+        console.error("Non-blocking bootstrap failed for directory:", directory, e)
+      })
   }
 
   const unsub = globalSDK.event.listen((e) => {
