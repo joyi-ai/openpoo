@@ -28,9 +28,6 @@ export function FloatingSelectorProvider(props: ParentProps) {
   let rightPressed = false
   let pendingOpen = false
 
-  // Save the focused element to restore later
-  let savedActiveElement: Element | null = null
-
   // Track hold-drag mode
   let isHoldDrag = false
   let holdDragTimer: ReturnType<typeof setTimeout> | null = null
@@ -50,61 +47,66 @@ export function FloatingSelectorProvider(props: ParentProps) {
   }
 
   const restoreFocus = () => {
-    const elementToFocus = savedActiveElement
-    if (elementToFocus && elementToFocus instanceof HTMLElement) {
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
-        elementToFocus.focus()
-      })
-    }
+    // Always focus the prompt input when closing
+    requestAnimationFrame(() => {
+      const promptInput = document.querySelector('[data-component="prompt-input"]')
+      if (promptInput instanceof HTMLElement) {
+        promptInput.focus()
+      }
+    })
   }
 
   const handleMouseDown = (e: MouseEvent) => {
     // Ignore if inside sidebar
     if (isInsideSidebar(e.target)) return
 
-    // Ignore if inside floating selector (let it handle its own clicks)
-    if (isInsideFloatingSelector(e.target)) {
-      e.preventDefault() // Prevent focus steal
-      return
-    }
-
     if (e.button === 0) leftPressed = true
     if (e.button === 2) rightPressed = true
 
-    // Check if both buttons are now pressed
+    // If open: close on right-click alone or left+right together (works inside or outside selector)
+    if (state.isOpen) {
+      if (e.button === 2 || (leftPressed && rightPressed)) {
+        e.preventDefault()
+        pendingOpen = true // Prevent context menu
+        setState("isOpen", false)
+        restoreFocus()
+        return
+      }
+    }
+
+    // Ignore left-clicks inside floating selector (let it handle its own clicks)
+    if (isInsideFloatingSelector(e.target)) {
+      // Allow inputs to receive focus
+      if (!(e.target instanceof HTMLInputElement)) {
+        e.preventDefault() // Prevent focus steal
+      }
+      return
+    }
+
+    // Check if both buttons are now pressed (to open)
     if (leftPressed && rightPressed && !pendingOpen) {
       pendingOpen = true
       e.preventDefault()
 
-      if (state.isOpen) {
-        // Close if already open
-        setState("isOpen", false)
-        restoreFocus()
-      } else {
-        // Save current focus before opening
-        savedActiveElement = document.activeElement
+      // Open at mouse position
+      setState({
+        isOpen: true,
+        position: { x: e.clientX, y: e.clientY },
+      })
 
-        // Open at mouse position
-        setState({
-          isOpen: true,
-          position: { x: e.clientX, y: e.clientY },
-        })
+      // Keep focus on prompt input
+      restoreFocus()
 
-        // Restore focus immediately since we prevented default
-        restoreFocus()
-
-        // Start hold-drag detection timer (150ms threshold)
-        // If buttons stay pressed for this duration, we're in hold-drag mode
-        isHoldDrag = false
-        hoveredAction = null
-        if (holdDragTimer) clearTimeout(holdDragTimer)
-        holdDragTimer = setTimeout(() => {
-          if (leftPressed && rightPressed && state.isOpen) {
-            isHoldDrag = true
-          }
-        }, 150)
-      }
+      // Start hold-drag detection timer (150ms threshold)
+      // If buttons stay pressed for this duration, we're in hold-drag mode
+      isHoldDrag = false
+      hoveredAction = null
+      if (holdDragTimer) clearTimeout(holdDragTimer)
+      holdDragTimer = setTimeout(() => {
+        if (leftPressed && rightPressed && state.isOpen) {
+          isHoldDrag = true
+        }
+      }, 150)
     }
   }
 
@@ -154,12 +156,19 @@ export function FloatingSelectorProvider(props: ParentProps) {
   const handleKeyDown = (e: KeyboardEvent) => {
     if (!state.isOpen) return
 
-    // Close on Escape
+    // If typing in an input inside the floating selector, let it through
+    const isTypingInSelector =
+      e.target instanceof HTMLInputElement && isInsideFloatingSelector(e.target)
+
+    // Close on Escape (even when in input)
     if (e.key === "Escape") {
       setState("isOpen", false)
       restoreFocus()
       return
     }
+
+    // Don't close if typing in an input inside the selector
+    if (isTypingInSelector) return
 
     // Close on any printable character key so typing goes to prompt input
     // This includes letters, numbers, punctuation, space, etc.

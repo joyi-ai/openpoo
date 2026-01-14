@@ -10,7 +10,6 @@ const CORNER_HIT_SIZE = 10
 const MIN_PANE_WIDTH = 240
 const MIN_PANE_HEIGHT = 180
 const MIN_TRACK_SLACK = 0.1
-const BOTTOM_SNAP_PX = 10
 
 type PaneGridProps = ParentProps<{
   panes: PaneConfig[]
@@ -24,7 +23,6 @@ export function PaneGrid(props: PaneGridProps) {
   let pendingFrame: number | undefined
   const paneRefs = new Map<string, HTMLDivElement>()
   const paneBodyRefs = new Map<string, HTMLDivElement>()
-  const paneContentRefs = new Map<string, HTMLDivElement>()
   const paneAnimations = new Map<string, Animation>()
   const maximizeAnimations = new Map<string, Animation>()
   const scrollLocks = new Map<string, () => void>()
@@ -73,7 +71,6 @@ export function PaneGrid(props: PaneGridProps) {
     scrollLocks.clear()
     paneRefs.clear()
     paneBodyRefs.clear()
-    paneContentRefs.clear()
     paneAnimations.clear()
     maximizeAnimations.clear()
     previousRects.clear()
@@ -84,7 +81,6 @@ export function PaneGrid(props: PaneGridProps) {
     top: number
     left: number
     anchor: string
-    atBottom: boolean
   }
 
   function snapshotScroll(root: HTMLElement) {
@@ -94,17 +90,12 @@ export function PaneGrid(props: PaneGridProps) {
       top: el.scrollTop,
       left: el.scrollLeft,
       anchor: el.style.overflowAnchor,
-      atBottom: el.scrollHeight - el.clientHeight - el.scrollTop <= BOTTOM_SNAP_PX,
     }))
   }
 
   function restoreScroll(items: ScrollSnapshot[]) {
     for (const item of items) {
-      if (item.atBottom) {
-        item.el.scrollTop = item.el.scrollHeight
-      } else {
-        item.el.scrollTop = item.top
-      }
+      item.el.scrollTop = item.top
       item.el.scrollLeft = item.left
     }
   }
@@ -141,18 +132,6 @@ export function PaneGrid(props: PaneGridProps) {
     release()
   }
 
-  function freezePaneContentWidth(id: string, px: number) {
-    const content = paneContentRefs.get(id)
-    if (!content) return
-    content.style.width = `${Math.max(1, Math.round(px))}px`
-  }
-
-  function unfreezePaneContent(id: string) {
-    const content = paneContentRefs.get(id)
-    if (!content) return
-    content.style.width = ""
-  }
-
   function restorePaneBody(id: string) {
     const maxId = maximizedPaneId()
     if (maxId && id === maxId) return
@@ -168,15 +147,12 @@ export function PaneGrid(props: PaneGridProps) {
       // Restore scroll positions after DOM move
       restoreScroll(scrollPositions)
     }
-    unfreezePaneContent(id)
     body.style.position = ""
     body.style.left = ""
     body.style.top = ""
     body.style.width = ""
     body.style.height = ""
     body.style.pointerEvents = ""
-    body.style.contain = ""
-    body.style.willChange = ""
   }
 
   // Capture current positions of all panes
@@ -241,7 +217,6 @@ export function PaneGrid(props: PaneGridProps) {
     const releaseLock = lockScroll(scrollPositions)
     scrollLocks.set(id, releaseLock)
 
-    freezePaneContentWidth(id, Math.max(from.width, to.width))
     overlayRef.appendChild(body)
 
     // Restore scroll positions after DOM move
@@ -283,7 +258,6 @@ export function PaneGrid(props: PaneGridProps) {
           restorePaneBody(id)
           return
         }
-        unfreezePaneContent(id)
         body.style.left = `${to.left}px`
         body.style.top = `${to.top}px`
         body.style.width = `${to.width}px`
@@ -292,7 +266,6 @@ export function PaneGrid(props: PaneGridProps) {
       () => {
         releaseScrollLock(id)
         body.style.contain = ""
-        unfreezePaneContent(id)
       },
     )
   }
@@ -348,7 +321,6 @@ export function PaneGrid(props: PaneGridProps) {
         if (currentIdSet.has(id)) continue
         paneAnimations.get(id)?.cancel()
         paneAnimations.delete(id)
-        releaseScrollLock(id)
         const body = paneBodyRefs.get(id)
         const slot = paneRefs.get(id)
         if (body && body.parentElement && body.parentElement !== slot) {
@@ -356,7 +328,6 @@ export function PaneGrid(props: PaneGridProps) {
         }
         paneBodyRefs.delete(id)
         paneRefs.delete(id)
-        paneContentRefs.delete(id)
       }
       pendingFrame = requestAnimationFrame(() => {
         pendingFrame = undefined
@@ -373,7 +344,6 @@ export function PaneGrid(props: PaneGridProps) {
       if (!currentIdSet.has(id)) {
         paneAnimations.get(id)?.cancel()
         paneAnimations.delete(id)
-        releaseScrollLock(id)
         const body = paneBodyRefs.get(id)
         const slot = paneRefs.get(id)
         if (body && body.parentElement && body.parentElement !== slot) {
@@ -381,7 +351,6 @@ export function PaneGrid(props: PaneGridProps) {
         }
         paneBodyRefs.delete(id)
         paneRefs.delete(id)
-        paneContentRefs.delete(id)
       }
     }
 
@@ -450,13 +419,9 @@ export function PaneGrid(props: PaneGridProps) {
 
         paneAnimations.get(id)?.cancel()
         paneAnimations.delete(id)
-        releaseScrollLock(id)
 
         // Save scroll positions before DOM move
         const scrollPositions = snapshotScroll(body)
-        const releaseLock = lockScroll(scrollPositions)
-        scrollLocks.set(id, releaseLock)
-        freezePaneContentWidth(id, Math.max(prevRect.width, currentRect.width))
 
         overlayRef.appendChild(body)
 
@@ -469,8 +434,6 @@ export function PaneGrid(props: PaneGridProps) {
         body.style.width = `${prevRect.width}px`
         body.style.height = `${prevRect.height}px`
         body.style.pointerEvents = "none"
-        body.style.contain = "layout"
-        body.style.willChange = "left, top, width, height"
 
         const anim = body.animate(
           [
@@ -487,18 +450,12 @@ export function PaneGrid(props: PaneGridProps) {
         paneAnimations.set(id, anim)
         anim.finished.then(
           () => {
-            releaseScrollLock(id)
             if (disposed) return
             if (paneAnimations.get(id) !== anim) return
             restorePaneBody(id)
             paneAnimations.delete(id)
           },
-          () => {
-            releaseScrollLock(id)
-            body.style.contain = ""
-            body.style.willChange = ""
-            unfreezePaneContent(id)
-          },
+          () => {},
         )
       }
 

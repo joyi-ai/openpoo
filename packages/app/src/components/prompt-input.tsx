@@ -45,7 +45,6 @@ import { Identifier } from "@/utils/id"
 import { SessionContextUsage } from "@/components/session-context-usage"
 import { usePlatform } from "@/context/platform"
 import { VoiceButton } from "@/components/voice-button"
-import { FloatingMegaSelector } from "@/components/floating-mega-selector"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { DialogSelectModel } from "@/components/dialog-select-model"
 import { DialogDeleteWorktree } from "@/components/dialog-delete-worktree"
@@ -366,7 +365,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       slash: "agent",
       onSelect: () => {
         local.agent.move(1)
-        notify(local.agent.current()?.name ?? "Agent")
       },
     },
     {
@@ -377,7 +375,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       keybind: "shift+mod+.",
       onSelect: () => {
         local.agent.move(-1)
-        notify(local.agent.current()?.name ?? "Agent")
       },
     },
     {
@@ -2320,7 +2317,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
   return (
     <div class="relative size-full _max-h-[320px] flex flex-col">
-      <FloatingMegaSelector />
+      <MegaSelector floating />
       <Show when={store.popover}>
         <div
           ref={(el) => {

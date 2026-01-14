@@ -11,7 +11,6 @@ export function createAutoScroll(options: AutoScrollOptions) {
   let scroll: HTMLElement | undefined
   let settling = false
   let settleTimer: ReturnType<typeof setTimeout> | undefined
-  let resizeFrame: number | undefined
   let down = false
   let cleanup: (() => void) | undefined
 
@@ -52,9 +51,7 @@ export function createAutoScroll(options: AutoScrollOptions) {
     const distance = distanceFromBottom()
     if (distance < 2) return
 
-    // When content is actively resizing (e.g. pane/grid animations), repeated smooth
-    // scrolling can look like jitter. Prefer snapping to bottom while we're "settling".
-    const behavior: ScrollBehavior = force || settling || distance > 96 ? "auto" : "smooth"
+    const behavior: ScrollBehavior = force || distance > 96 ? "auto" : "smooth"
     scrollToBottomNow(behavior)
   }
 
@@ -113,11 +110,7 @@ export function createAutoScroll(options: AutoScrollOptions) {
     () => {
       startSettling()
       if (store.userScrolled) return
-      if (resizeFrame !== undefined) return
-      resizeFrame = requestAnimationFrame(() => {
-        resizeFrame = undefined
-        scrollToBottom(false)
-      })
+      scrollToBottom(false)
     },
   )
 
@@ -138,7 +131,6 @@ export function createAutoScroll(options: AutoScrollOptions) {
 
   onCleanup(() => {
     if (settleTimer) clearTimeout(settleTimer)
-    if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame)
     if (cleanup) cleanup()
   })
 

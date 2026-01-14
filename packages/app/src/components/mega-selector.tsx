@@ -1,11 +1,13 @@
 import { Popover as Kobalte } from "@kobalte/core/popover"
 import { Component, createMemo, createSignal, For, Show } from "solid-js"
+import { Portal } from "solid-js/web"
 import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { Switch } from "@opencode-ai/ui/switch"
 import { Tag } from "@opencode-ai/ui/tag"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { useLocal } from "@/context/local"
+import { useFloatingSelector } from "@/context/floating-selector"
 import { popularProviders } from "@/hooks/use-providers"
 import type { ModeDefinition } from "@/modes/types"
 import { DialogEditMode } from "./dialog-edit-mode"
@@ -15,6 +17,12 @@ import { Dialog } from "@opencode-ai/ui/dialog"
 import { showToast } from "@opencode-ai/ui/toast"
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
+
+// Prevent focus steal on mousedown, but allow inputs to receive focus
+const preventFocus = (e: MouseEvent) => {
+  if (e.target instanceof HTMLInputElement) return
+  e.preventDefault()
+}
 
 const InstallModeDialog: Component<{ mode: ModeDefinition; onInstalled?: () => void }> = (props) => {
   const dialog = useDialog()
@@ -73,14 +81,25 @@ const InstallModeDialog: Component<{ mode: ModeDefinition; onInstalled?: () => v
   )
 }
 
-export const MegaSelector: Component<{ class?: string }> = (props) => {
+export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (props) => {
   const dialog = useDialog()
   const local = useLocal()
+  const floatingSelector = useFloatingSelector()
   const [open, setOpen] = createSignal(false)
   const [modelSearch, setModelSearch] = createSignal("")
   const [isSearching, setIsSearching] = createSignal(false)
   const [selectedProvider, setSelectedProvider] = createSignal<string | undefined>(undefined)
   const [showProviderFilter, setShowProviderFilter] = createSignal(false)
+
+  // For floating mode, use floatingSelector state
+  const isOpen = () => (props.floating ? floatingSelector.isOpen() : open())
+  const handleClose = () => {
+    if (props.floating) {
+      floatingSelector.close()
+    } else {
+      setOpen(false)
+    }
+  }
 
   const currentMode = createMemo(() => local.mode.current())
   const modes = createMemo(() => local.mode.list())
@@ -230,7 +249,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
   const handleModeSelect = (mode: ModeDefinition) => {
     if (currentMode()?.id === mode.id) return
     if (!local.mode.isAvailable(mode)) {
-      setOpen(false)
+      handleClose()
       dialog.show(() => <InstallModeDialog mode={mode} onInstalled={() => local.mode.set(mode.id)} />)
       return
     }
@@ -239,23 +258,25 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
 
   const handleModeEdit = (mode: ModeDefinition, event: MouseEvent) => {
     event.stopPropagation()
-    setOpen(false)
+    handleClose()
     dialog.show(() => <DialogEditMode mode={mode} />)
   }
 
-  return (
-    <Kobalte open={open()} onOpenChange={setOpen} placement="top-start" gutter={8}>
-      <Kobalte.Trigger as="div" class={props.class}>
-        <Button variant="ghost" class="gap-1.5">
-          <span class="truncate max-w-[120px]">{currentMode()?.name ?? "Mode"}</span>
-          <Icon name="chevron-down" size="small" />
-        </Button>
-      </Kobalte.Trigger>
-      <Kobalte.Portal>
-        <Kobalte.Content class="w-[690px] h-64 rounded-md border border-border-base bg-surface-raised-stronger-non-alpha shadow-md z-50 outline-none overflow-hidden">
-          <Kobalte.Title class="sr-only">Mode, Agent, and Model settings</Kobalte.Title>
+  // Floating position style
+  const floatingPositionStyle = createMemo(() => {
+    const pos = floatingSelector.position()
+    return {
+      position: "fixed" as const,
+      left: `${pos.x}px`,
+      top: `${pos.y}px`,
+      transform: "translate(-50%, -100%)",
+      "z-index": "9999",
+    }
+  })
 
-          <div class="flex h-full">
+  // The content panel shared between popover and floating modes
+  const ContentPanel = () => (
+    <div class="flex h-full">
             {/* MODE COLUMN */}
             <div class="flex flex-col p-2 border-r border-border-base w-[180px] shrink-0">
               <div class="text-11-regular text-text-subtle px-1 pb-1 uppercase tracking-wider shrink-0">Mode</div>
@@ -352,7 +373,7 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
                     }
                   >
                     <input
-                      ref={(el) => el.focus()}
+                      ref={(el) => queueMicrotask(() => el.focus())}
                       type="text"
                       placeholder="Search..."
                       value={modelSearch()}
@@ -630,6 +651,44 @@ export const MegaSelector: Component<{ class?: string }> = (props) => {
               </div>
             </div>
           </div>
+  )
+
+  // Floating mode: render as Portal at mouse position
+  if (props.floating) {
+    return (
+      <Show when={isOpen()}>
+        <Portal>
+          <div
+            data-floating-selector
+            tabIndex={-1}
+            style={floatingPositionStyle()}
+            class="animate-in fade-in zoom-in-95 duration-150"
+            onMouseDown={preventFocus}
+          >
+            <div class="w-[690px] h-64 rounded-md border border-border-base bg-surface-raised-stronger-non-alpha shadow-lg overflow-hidden">
+              <ContentPanel />
+            </div>
+          </div>
+        </Portal>
+      </Show>
+    )
+  }
+
+  // Normal popover mode
+  return (
+    <Kobalte open={open()} onOpenChange={setOpen} placement="top-start" gutter={8}>
+      <Kobalte.Trigger as="div" class={props.class}>
+        <Button variant="ghost" class="gap-1.5">
+          <span class="truncate max-w-[120px]">{currentMode()?.name ?? "Mode"}</span>
+          <span class="text-text-weak">/</span>
+          <span class="truncate max-w-[80px] capitalize">{currentAgent()?.name ?? "Agent"}</span>
+          <Icon name="chevron-down" size="small" />
+        </Button>
+      </Kobalte.Trigger>
+      <Kobalte.Portal>
+        <Kobalte.Content class="w-[690px] h-64 rounded-md border border-border-base bg-surface-raised-stronger-non-alpha shadow-md z-50 outline-none overflow-hidden">
+          <Kobalte.Title class="sr-only">Mode, Agent, and Model settings</Kobalte.Title>
+          <ContentPanel />
         </Kobalte.Content>
       </Kobalte.Portal>
     </Kobalte>

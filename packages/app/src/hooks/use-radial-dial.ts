@@ -59,6 +59,15 @@ export function useRadialDial(options: UseRadialDialOptions): UseRadialDialRetur
   onCleanup(cleanup)
 
   function handleMouseDown(e: MouseEvent) {
+    // If left button is pressed while we have a pending timer, cancel it
+    // This handles the case where user presses left slightly after right (for floating selector)
+    if (e.button === 0) {
+      if (isHolding || holdTimer) {
+        cleanup()
+      }
+      return
+    }
+
     // Only respond to right-click
     if (e.button !== 2) return
 
