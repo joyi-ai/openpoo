@@ -1957,8 +1957,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       const inHistory = store.historyIndex >= 0
       const atStart = cursorPosition <= (isEmpty ? 1 : 0)
       const atEnd = cursorPosition >= (isEmpty ? textLength - 1 : textLength)
-      const allowUp = isEmpty || atStart || (!hasNewlines && !inHistory) || (inHistory && atEnd)
-      const allowDown = isEmpty || atEnd || (!hasNewlines && !inHistory) || (inHistory && atStart)
+      const allowUp = isEmpty || atStart || (!hasNewlines && !inHistory)
+      const allowDown = isEmpty || atEnd || (!hasNewlines && !inHistory)
 
       if (event.key === "ArrowUp") {
         if (!allowUp) return
