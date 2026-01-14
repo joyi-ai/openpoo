@@ -1233,7 +1233,7 @@ export default function Layout(props: ParentProps) {
     const [store, setProjectStore] = globalSync.child(props.project.worktree)
     const sessions = createMemo(() => store.session.toSorted(sortSessions))
     const rootSessions = createMemo(() => sessions().filter((s) => !s.parentID && !s.time?.archived))
-    const hasMoreSessions = createMemo(() => store.session.length >= store.limit)
+    const hasMoreSessions = createMemo(() => store.session_more ?? store.session.length >= store.limit)
     const loadMoreSessions = async () => {
       setProjectStore("limit", (limit) => limit + 5)
       await globalSync.project.loadSessions(props.project.worktree)

@@ -66,6 +66,7 @@ type State = {
   config: Config
   path: Path
   session: Session[]
+  session_more: boolean
   session_status: {
     [sessionID: string]: SessionStatus
   }
@@ -131,6 +132,7 @@ function createGlobalSync() {
         agent: [],
         command: [],
         session: [],
+        session_more: false,
         session_status: {},
         session_diff: {},
         todo: {},
@@ -184,7 +186,10 @@ function createGlobalSync() {
             return { ...session, directory }
           })
         const sessions = fetched.slice(0, limit).sort((a, b) => a.id.localeCompare(b.id))
-        setStore("session", reconcile(sessions, { key: "id" }))
+        batch(() => {
+          setStore("session_more", (x.data ?? []).length >= limit)
+          setStore("session", reconcile(sessions, { key: "id" }))
+        })
       })
       .catch((err) => {
         console.error("Failed to load sessions", err)

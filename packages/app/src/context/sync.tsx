@@ -260,17 +260,18 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           mergeParts(localSetStore, input.info.sessionID, input.info.id, input.parts ?? [])
         },
         async sync(sessionID: string) {
+          const current = store()
           const hasSession = getSession(sessionID) !== undefined
           hydrateMessages(sessionID)
 
-          const hasMessages = store().message[sessionID] !== undefined
+          const hasMessages = current.message[sessionID] !== undefined
           let partsReady = meta.parts[sessionID] === true
           if (hasMessages && !partsReady) {
-            const messages = store().message[sessionID] ?? []
+            const messages = current.message[sessionID] ?? []
             if (messages.length > 0) {
               let ready = true
               for (const message of messages) {
-                if (!store().part[message.id]) {
+                if (!current.part[message.id]) {
                   ready = false
                   continue
                 }
