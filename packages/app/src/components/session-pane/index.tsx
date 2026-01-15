@@ -380,7 +380,7 @@ export function SessionPane(props: SessionPaneProps) {
             }}
           >
             <div class="flex min-h-full flex-col">
-              <div class="flex flex-col gap-4">
+              <div class="flex flex-col gap-4 pt-6">
                 <For each={renderedUserMessages()}>
                   {(message) => (
                     <div data-message-id={message.id}>
