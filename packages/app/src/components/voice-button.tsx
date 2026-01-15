@@ -5,7 +5,7 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { Spinner } from "@opencode-ai/ui/spinner"
 import { useVoice } from "@/context/voice"
-import { DialogVoiceSettings } from "./dialog-voice-settings"
+import { SettingsDialog } from "./settings-dialog"
 
 interface VoiceButtonProps {
   onTranscription?: (text: string) => void
@@ -27,7 +27,7 @@ export function VoiceButton(props: VoiceButtonProps) {
   const handleClick = () => {
     // If model not ready, show settings dialog to download
     if (voice.state.modelStatus() !== "ready") {
-      dialog.show(() => <DialogVoiceSettings />)
+      dialog.show(() => <SettingsDialog />)
       return
     }
 
