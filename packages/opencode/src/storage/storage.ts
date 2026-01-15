@@ -147,7 +147,7 @@ export namespace Storage {
       const messagesDir = path.join(dir, "message")
 
       // Check if message directory exists
-      if (!(await fs.exists(messagesDir))) {
+      if (!(await Filesystem.exists(messagesDir))) {
         log.info("no messages directory found, skipping migration")
         return
       }
@@ -176,7 +176,7 @@ export namespace Storage {
 
         // Collect parts from separate files
         const parts: any[] = []
-        if (await fs.exists(partsDir)) {
+        if (await Filesystem.exists(partsDir)) {
           for await (const partPath of messageGlob.scan({
             cwd: partsDir,
             absolute: true,
@@ -196,14 +196,14 @@ export namespace Storage {
         log.info(`migrated message ${messageID} with ${parts.length} parts`)
 
         // Remove old part files
-        if (await fs.exists(partsDir)) {
+        if (await Filesystem.exists(partsDir)) {
           await fs.rm(partsDir, { recursive: true }).catch(() => {})
         }
       }
 
       // Clean up empty part directories
       const partDir = path.join(dir, "part")
-      if (await fs.exists(partDir)) {
+      if (await Filesystem.exists(partDir)) {
         const remaining = await fs.readdir(partDir).catch(() => [])
         if (remaining.length === 0) {
           await fs.rm(partDir, { recursive: true }).catch(() => {})
@@ -240,7 +240,7 @@ export namespace Storage {
       if (!message.id || !message.sessionID) continue
       const partsDir = path.join(dir, "part", message.id)
       const parts: StorageSqlite.PartRecord[] = []
-      if (await fs.exists(partsDir)) {
+      if (await Filesystem.exists(partsDir)) {
         for await (const partFile of new Bun.Glob("*.json").scan({ cwd: partsDir, absolute: true })) {
           const part = await Bun.file(partFile)
             .json()

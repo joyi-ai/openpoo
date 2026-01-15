@@ -1,5 +1,4 @@
 import path from "path"
-import { exists } from "fs/promises"
 import { Global } from "@/global"
 import { Instance } from "@/project/instance"
 import { Filesystem } from "@/util/filesystem"
@@ -63,7 +62,7 @@ export namespace ClaudePluginDiscovery {
 
     // Also include global ~/.claude directory
     const globalClaude = path.join(Global.Path.home, ".claude")
-    if (await exists(globalClaude)) {
+    if (await Filesystem.exists(globalClaude)) {
       claudeDirs.push(globalClaude)
     }
 
@@ -86,7 +85,7 @@ export namespace ClaudePluginDiscovery {
 
       // Also check if the .claude directory itself is a plugin
       const directManifest = path.join(claudeDir, ".claude-plugin", "plugin.json")
-      if (await exists(directManifest)) {
+      if (await Filesystem.exists(directManifest)) {
         const plugin = await parsePlugin(claudeDir)
         if (plugin && !seen.has(plugin.id)) {
           seen.add(plugin.id)
@@ -132,12 +131,12 @@ export namespace ClaudePluginDiscovery {
 
     // Check which components exist
     const [hasCommands, hasAgents, hasSkills, hasHooks, hasMcp, hasLsp] = await Promise.all([
-      exists(path.join(dir, "commands")),
-      exists(path.join(dir, "agents")),
-      exists(path.join(dir, "skills")),
-      exists(path.join(dir, "hooks", "hooks.json")),
-      exists(path.join(dir, ".mcp.json")),
-      exists(path.join(dir, ".lsp.json")),
+      Filesystem.exists(path.join(dir, "commands")),
+      Filesystem.exists(path.join(dir, "agents")),
+      Filesystem.exists(path.join(dir, "skills")),
+      Filesystem.exists(path.join(dir, "hooks", "hooks.json")),
+      Filesystem.exists(path.join(dir, ".mcp.json")),
+      Filesystem.exists(path.join(dir, ".lsp.json")),
     ])
 
     log.info("parsed plugin", {
@@ -226,7 +225,7 @@ export namespace ClaudePluginDiscovery {
         }
 
         // Check if path exists
-        if (!(await exists(inst.installPath))) {
+        if (!(await Filesystem.exists(inst.installPath))) {
           log.warn("plugin path does not exist", { pluginKey, path: inst.installPath })
           continue
         }
