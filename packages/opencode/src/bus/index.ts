@@ -57,7 +57,7 @@ export namespace Bus {
       }
     }
     GlobalBus.emit("event", {
-      directory: Instance.project.worktree,
+      directory: Instance.directory,
       payload,
     })
     return Promise.all(pending)

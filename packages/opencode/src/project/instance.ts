@@ -67,7 +67,7 @@ export const Instance = {
     await State.dispose(Instance.directory)
     cache.delete(Instance.directory)
     GlobalBus.emit("event", {
-      directory: Instance.project.worktree,
+      directory: Instance.directory,
       payload: {
         type: "server.instance.disposed",
         properties: {

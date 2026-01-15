@@ -129,7 +129,7 @@ function createGlobalSync() {
     provider_auth: ProviderAuthResponse
   }>({
     ready: false,
-    path: { state: "", config: "", worktree: "", directory: "", home: "" },
+    path: { state: "", config: "", directory: "", home: "" },
     project: [],
     provider: { all: [], connected: [], default: {} },
     provider_auth: {},
@@ -169,7 +169,7 @@ function createGlobalSync() {
           project: "",
           provider: { all: [], connected: [], default: {} },
           config: {},
-          path: { state: "", config: "", worktree: "", directory: "", home: "" },
+          path: { state: "", config: "", directory: "", home: "" },
           status: "loading" as const,
           agent: [],
           command: [],
@@ -220,17 +220,30 @@ function createGlobalSync() {
     const pageLimit = Math.max(1, remaining)
     const limit = pageLimit + 1
 
-    const query = afterID ? { directory: resolvedDirectory, limit, afterID } : { directory: resolvedDirectory, limit }
-    const promise = globalSDK.client.session
+    // Don't pass directory filter - let server return all project sessions.
+    // Use a per-directory client so the server selects the right instance.
+    const sdk = createOpencodeClient({
+      baseUrl: globalSDK.url,
+      directory: resolvedDirectory,
+      throwOnError: true,
+      ...fetchConfig,
+    })
+    const query = afterID ? { limit, afterID } : { limit }
+    const promise = sdk.session
       .list(query)
       .then((x) => {
         const root = resolveDirectoryKey(resolvedDirectory)
         const fallback = resolveDirectoryKey(globalStore.path.directory)
         const projectById = globalStore.project.find((p) => p.id === store.project)
-        const projectByPath = globalStore.project.find((p) => resolveDirectoryKey(p.worktree) === root)
+        const projectByPath = globalStore.project.find((p) => {
+          if (resolveDirectoryKey(p.worktree) === root) return true
+          const sandboxes = p.sandboxes ?? []
+          return sandboxes.some((s) => resolveDirectoryKey(s) === root)
+        })
         const project = projectById ?? projectByPath
+        const projectRoot = project ? resolveDirectoryKey(project.worktree) : undefined
         const sandboxes = (project?.sandboxes ?? []).map(resolveDirectoryKey).filter(Boolean)
-        const allowed = new Set([root, ...sandboxes].filter(Boolean))
+        const allowed = new Set([root, projectRoot, ...sandboxes].filter(Boolean))
         const allow = (input: string | undefined) => {
           const dir = resolveDirectoryKey(input)
           if (dir) return allowed.has(dir)

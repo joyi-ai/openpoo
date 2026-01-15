@@ -1,4 +1,4 @@
-import { Show, createMemo, onMount, createEffect, on, createSignal, type JSX } from "solid-js"
+import { Show, createMemo, onMount, createEffect, on, createSignal, batch, type JSX } from "solid-js"
 import { useSearchParams } from "@solidjs/router"
 import { useMultiPane, type PaneConfig } from "@/context/multi-pane"
 import { PaneGrid } from "@/components/pane-grid"
@@ -27,6 +27,7 @@ import { MultiPanePromptPanel } from "@/components/multi-pane/prompt-panel"
 import { PaneHome } from "@/components/multi-pane/pane-home"
 import { getPaneProjectLabel, getPaneState, getPaneTitle } from "@/utils/pane"
 import { useCommand } from "@/context/command"
+import { normalizeDirectoryKey } from "@/utils/directory"
 
 type MultiPanePageProps = {
   initialDir?: string
@@ -293,6 +294,37 @@ function MultiPaneContent(props: MultiPanePageProps) {
   const defaultProject = createMemo(() => globalSync.data.path.directory)
   const getLastProject = () => recentProject() || defaultProject() || layout.projects.list()[0]?.worktree
 
+  const resolveProjectDirectory = (directory: string | undefined) => {
+    if (!directory) return { directory: undefined, worktree: undefined }
+    const normalized = normalizeDirectoryKey(directory)
+    if (!normalized) return { directory, worktree: undefined }
+    const project = globalSync.data.project.find((candidate) => {
+      if (normalizeDirectoryKey(candidate.worktree) === normalized) return true
+      return (candidate.sandboxes ?? []).some((sandbox) => normalizeDirectoryKey(sandbox) === normalized)
+    })
+    if (!project) return { directory, worktree: undefined }
+    const rootKey = normalizeDirectoryKey(project.worktree)
+    const isRoot = rootKey === normalized
+    return { directory: project.worktree, worktree: isRoot ? undefined : directory }
+  }
+
+  createEffect(() => {
+    const panes = multiPane.panes()
+    if (panes.length === 0) return
+    if (globalSync.data.project.length === 0) return
+    batch(() => {
+      for (const pane of panes) {
+        if (!pane.directory) continue
+        const resolved = resolveProjectDirectory(pane.directory)
+        if (!resolved.directory) continue
+        const nextDirectory = resolved.directory
+        const nextWorktree = resolved.worktree ?? pane.worktree
+        if (nextDirectory === pane.directory && nextWorktree === pane.worktree) continue
+        multiPane.updatePane(pane.id, { directory: nextDirectory, worktree: nextWorktree })
+      }
+    })
+  })
+
   const focusPaneByOffset = (offset: number) => {
     const panes = visiblePanes()
     if (panes.length === 0) return
@@ -339,7 +371,7 @@ function MultiPaneContent(props: MultiPanePageProps) {
       <DialogDeleteWorktree
         worktreePath={worktreePath}
         onConfirm={async () => {
-          await globalSDK.client.session.worktree.delete({
+          await globalSDK.client.global.worktree.delete({
             directory: worktreePath,
           })
           showToast({
@@ -457,11 +489,13 @@ function MultiPaneContent(props: MultiPanePageProps) {
 
     if (multiPane.panes().length === 0) {
       if (initialDir) {
-        layout.projects.open(initialDir)
+        const resolved = resolveProjectDirectory(initialDir)
+        const projectDirectory = resolved.directory ?? initialDir
+        layout.projects.open(projectDirectory)
         // Add pane with session (if any) and a new tab with same/last project
-        multiPane.addPane(initialDir, initialSession)
+        multiPane.addPane(projectDirectory, initialSession, { worktree: resolved.worktree })
         if (wantsNewTab) {
-          multiPane.addPaneFromFocused(initialDir)
+          multiPane.addPaneFromFocused(projectDirectory)
         }
         if (shouldClearParams) {
           setSearchParams({ dir: undefined, session: undefined, newTab: undefined })
@@ -483,9 +517,11 @@ function MultiPaneContent(props: MultiPanePageProps) {
     if (!initialDir) return
     if (!wantsNewTab) return
     // Already have panes, but coming from session "New Tab" button
-    layout.projects.open(initialDir)
-    multiPane.addPane(initialDir, initialSession)
-    multiPane.addPaneFromFocused(initialDir)
+    const resolved = resolveProjectDirectory(initialDir)
+    const projectDirectory = resolved.directory ?? initialDir
+    layout.projects.open(projectDirectory)
+    multiPane.addPane(projectDirectory, initialSession, { worktree: resolved.worktree })
+    multiPane.addPaneFromFocused(projectDirectory)
     if (shouldClearParams) {
       setSearchParams({ dir: undefined, session: undefined, newTab: undefined })
     }
@@ -517,8 +553,14 @@ function MultiPaneContent(props: MultiPanePageProps) {
         const sessionId = params.session
         const focusedPane = multiPane.focusedPane()
         if (focusedPane) {
-          layout.projects.open(params.dir)
-          multiPane.updatePane(focusedPane.id, { directory: params.dir, sessionId })
+          const resolved = resolveProjectDirectory(params.dir)
+          const projectDirectory = resolved.directory ?? params.dir
+          layout.projects.open(projectDirectory)
+          multiPane.updatePane(focusedPane.id, {
+            directory: projectDirectory,
+            sessionId,
+            worktree: resolved.worktree,
+          })
           multiPane.setFocused(focusedPane.id)
         }
         if (!params.hasQueryParams) return

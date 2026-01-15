@@ -9,6 +9,7 @@ import { Persist, persisted, removePersisted } from "@/utils/persist"
 import { same } from "@/utils/same"
 import { createScrollPersistence, type SessionScroll } from "./layout-scroll"
 import { base64Encode } from "@opencode-ai/util/encode"
+import { normalizeDirectoryKey } from "@/utils/directory"
 
 const AVATAR_COLOR_KEYS = ["pink", "mint", "orange", "purple", "cyan", "lime"] as const
 export type AvatarColorKey = (typeof AVATAR_COLOR_KEYS)[number]
@@ -258,29 +259,36 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       for (const project of globalSync.data.project) {
         const sandboxes = project.sandboxes ?? []
         for (const sandbox of sandboxes) {
-          map.set(sandbox, project.worktree)
+          const key = normalizeDirectoryKey(sandbox)
+          if (key) map.set(key, project.worktree)
         }
       }
       return map
     })
+
+    function resolveRoot(directory: string): string {
+      const key = normalizeDirectoryKey(directory)
+      return roots().get(key) ?? directory
+    }
 
     createEffect(() => {
       const map = roots()
       if (map.size === 0) return
 
       const projects = server.projects.list()
-      const seen = new Set(projects.map((project) => project.worktree))
+      const seen = new Set(projects.map((project) => normalizeDirectoryKey(project.worktree)))
 
       batch(() => {
         for (const project of projects) {
-          const root = map.get(project.worktree)
-          if (!root) continue
+          const root = resolveRoot(project.worktree)
+          if (root === project.worktree) continue
 
           server.projects.close(project.worktree)
 
-          if (!seen.has(root)) {
+          const rootKey = normalizeDirectoryKey(root)
+          if (!seen.has(rootKey)) {
             server.projects.open(root)
-            seen.add(root)
+            seen.add(rootKey)
           }
 
           if (project.expanded) server.projects.expand(root)
@@ -296,7 +304,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       projects: {
         list,
         open(directory: string) {
-          const root = roots().get(directory) ?? directory
+          const root = resolveRoot(directory)
           if (server.projects.list().find((x) => x.worktree === root)) return
           globalSync.project.loadSessions(root)
           server.projects.open(root)

@@ -2687,7 +2687,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                       <DialogDeleteWorktree
                         worktreePath={worktreePath}
                         onConfirm={async () => {
-                          await sdk.client.session.worktree.delete({
+                          await sdk.client.global.worktree.delete({
                             directory: worktreePath,
                           })
                           showToast({

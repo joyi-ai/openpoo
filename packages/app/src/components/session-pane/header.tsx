@@ -40,8 +40,9 @@ export function SessionPaneHeader(props: SessionPaneHeaderProps) {
   }
 
   function navigateToSession(session: Session | undefined) {
+    if (!session) return
     queueMicrotask(() => {
-      props.onSessionChange?.(session?.id)
+      props.onSessionChange?.(session.id)
     })
   }
 

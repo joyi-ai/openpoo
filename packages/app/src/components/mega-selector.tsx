@@ -309,7 +309,7 @@ export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (
             {/* MODE COLUMN */}
             <div class="flex flex-col p-2 border-r border-border-base w-[180px] shrink-0">
               <div class="text-11-regular text-text-subtle px-1 pb-1 uppercase tracking-wider shrink-0">Mode</div>
-              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto">
+              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto no-scrollbar">
                 <For each={modes()}>
                   {(mode) => {
                     const missing = createMemo(() => local.mode.missingPlugins(mode))
@@ -362,7 +362,7 @@ export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (
             {/* AGENT COLUMN */}
             <div class="flex flex-col p-2 border-r border-border-base w-[130px] shrink-0">
               <div class="text-11-regular text-text-subtle px-1 pb-1 uppercase tracking-wider shrink-0">Agent</div>
-              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto">
+              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto no-scrollbar">
                 <For each={agents()}>
                   {(agent) => {
                     const isCurrent = createMemo(() => currentAgent()?.name === agent.name)
@@ -410,16 +410,15 @@ export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (
               }}
             >
               <div
-                class="flex flex-col p-2 bg-surface-raised-stronger-non-alpha"
+                class="flex flex-col p-2 bg-surface-raised-stronger-non-alpha transition-[height,transform] duration-200 ease-out"
                 classList={{
-                  "absolute left-0 z-50 shadow-xl rounded-md": isModelExpanded(),
+                  "absolute left-0 top-0 z-50 shadow-xl rounded-md": isModelExpanded(),
                   "relative h-full": !isModelExpanded(),
                 }}
                 style={{
                   width: "240px",
-                  height: isModelExpanded() ? "500px" : "100%",
-                  top: isModelExpanded() && expandDirection() === "down" ? "0" : (isModelExpanded() ? "auto" : "0"),
-                  bottom: isModelExpanded() && expandDirection() === "up" ? "0" : "auto",
+                  height: isModelExpanded() ? "500px" : undefined,
+                  transform: isModelExpanded() && expandDirection() === "up" ? "translateY(-244px)" : undefined,
                 }}
               >
               {/* Header: MODEL text or search input */}
@@ -491,7 +490,7 @@ export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (
                 </div>
                 {/* Provider filter dropdown */}
                 <Show when={showProviderFilter()}>
-                  <div class="flex flex-col gap-0.5 pb-1 mb-1 border-b border-border-base max-h-32 overflow-y-auto">
+                  <div class="flex flex-col gap-0.5 pb-1 mb-1 border-b border-border-base max-h-32 overflow-y-auto no-scrollbar">
                     <button
                       type="button"
                       class="px-2 py-1 text-12-regular text-left rounded hover:bg-surface-raised-base-hover shrink-0"
@@ -523,7 +522,7 @@ export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (
                   </div>
                 </Show>
               </Show>
-              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto">
+              <div class="flex flex-col gap-0.5 flex-1 overflow-y-auto no-scrollbar">
                 <Show
                   when={isOpencodeMode()}
                   fallback={
@@ -700,7 +699,7 @@ export const MegaSelector: Component<{ class?: string; floating?: boolean }> = (
             {/* OPTIONS COLUMN (Variant + Extended Thinking) */}
             <div class="flex flex-col p-2 flex-1 overflow-hidden">
               <div class="text-11-regular text-text-subtle px-1 pb-1 uppercase tracking-wider shrink-0">Options</div>
-              <div class="flex flex-col gap-2 flex-1 overflow-y-auto">
+              <div class="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar">
                 {/* VARIANT SECTION */}
                 <Show when={hasVariants()}>
                   <div class="flex flex-col gap-1">
