@@ -2,7 +2,8 @@
 
 A fork of OpenCode with significant UI/UX changes focused on the desktop app.
 
-<video src="assets/demo.mp4" controls width="100%"></video>
+![OpenPoo Screenshot](assets/screenshot.png)
+![OpenPoo Project Selector](assets/screenshot2.png)
 
 ## Key Differences
 
