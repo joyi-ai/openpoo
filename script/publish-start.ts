@@ -51,11 +51,12 @@ process.chdir(dir)
 let output = `version=${Script.version}\n`
 
 if (!Script.preview) {
-  await $`git commit -am "release: v${Script.version}"`
-  await $`git tag v${Script.version}`
+  // Use nothrow() in case there's nothing to commit (version already bumped)
+  await $`git commit -am "release: v${Script.version}"`.nothrow()
+  await $`git tag v${Script.version}`.nothrow() // Tag might already exist
   await $`git fetch origin`
   await $`git cherry-pick HEAD..origin/dev`.nothrow()
-  await $`git push origin HEAD --tags --no-verify --force-with-lease`
+  await $`git push origin HEAD --tags --no-verify --force-with-lease`.nothrow()
   await new Promise((resolve) => setTimeout(resolve, 5_000))
   await $`gh release create v${Script.version} -d --title "v${Script.version}" --notes ${notes.join("\n") || "No notable changes"} ./packages/opencode/dist/*.zip ./packages/opencode/dist/*.tar.gz`
   const release = await $`gh release view v${Script.version} --json id,tagName`.json()
