@@ -177,7 +177,7 @@ jobs:
 
       - name: Build and upload artifacts
         uses: Wandalen/wretry.action@v3
-        timeout-minutes: 60
+        timeout-minutes: 180
         with:
           attempt_limit: 3
           attempt_delay: 10000
