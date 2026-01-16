@@ -42,11 +42,8 @@ await $`bun install`
 console.log("\n=== opencode ===\n")
 await import(`../packages/opencode/script/publish.ts`)
 
-console.log("\n=== sdk ===\n")
-await import(`../packages/sdk/js/script/publish.ts`)
-
-console.log("\n=== plugin ===\n")
-await import(`../packages/plugin/script/publish.ts`)
+// Skip SDK and plugin npm publishing - we only need GitHub releases
+console.log("\n=== skipping sdk/plugin npm publish ===\n")
 
 const dir = new URL("..", import.meta.url).pathname
 process.chdir(dir)

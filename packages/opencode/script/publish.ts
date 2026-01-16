@@ -36,22 +36,7 @@ await Bun.file(`./dist/${pkg.name}/package.json`).write(
   ),
 )
 
-const tags = [Script.channel]
-
-const tasks = Object.entries(binaries).map(async ([name]) => {
-  if (process.platform !== "win32") {
-    await $`chmod -R 755 .`.cwd(`./dist/${name}`)
-  }
-  await $`bun pm pack`.cwd(`./dist/${name}`)
-  for (const tag of tags) {
-    await $`npm publish *.tgz --access public --tag ${tag}`.cwd(`./dist/${name}`)
-  }
-})
-await Promise.all(tasks)
-for (const tag of tags) {
-  await $`cd ./dist/${pkg.name} && bun pm pack && npm publish *.tgz --access public --tag ${tag}`
-}
-
+// Skip npm publishing - just create archives for GitHub release
 if (!Script.preview) {
   // Create archives for GitHub release
   for (const key of Object.keys(binaries)) {
@@ -61,10 +46,4 @@ if (!Script.preview) {
       await $`zip -r ../../${key}.zip *`.cwd(`dist/${key}/bin`)
     }
   }
-
-  const image = "ghcr.io/joyi-ai/openpoo"
-  const platforms = "linux/amd64,linux/arm64"
-  const tags = [`${image}:${Script.version}`, `${image}:latest`]
-  const tagFlags = tags.flatMap((t) => ["-t", t])
-  await $`docker buildx build --platform ${platforms} ${tagFlags} --push .`
 }
