@@ -1,4 +1,14 @@
-import { For, Show, createMemo, createEffect, on, createSignal, type Accessor } from "solid-js"
+import {
+  For,
+  Show,
+  createMemo,
+  createEffect,
+  createRenderEffect,
+  on,
+  onCleanup,
+  createSignal,
+  type Accessor,
+} from "solid-js"
 import { createStore } from "solid-js/store"
 import { SessionTurn } from "@opencode-ai/ui/session-turn"
 import { SessionTodoFooter } from "@opencode-ai/ui/session-todo-footer"
@@ -209,10 +219,18 @@ export function SessionPane(props: SessionPaneProps) {
   const sessionTurnPadding = () => "pb-0"
 
   // Auto-scroll: keep new user messages aligned to the top while tracking bottom state
+  type ViewportAnchor =
+    | { type: "bottom" }
+    | { type: "message"; id: string; offset: number }
+
   const [scrollContainer, setScrollContainer] = createSignal<HTMLDivElement>()
   const [contentContainer, setContentContainer] = createSignal<HTMLDivElement>()
   const [isAtBottom, setIsAtBottom] = createSignal(true)
   const [containerHeight, setContainerHeight] = createSignal(0)
+  const [viewportAnchor, setViewportAnchor] = createSignal<ViewportAnchor | null>(null)
+  const [pendingViewportAnchor, setPendingViewportAnchor] = createSignal<ViewportAnchor | null>(null)
+  let pendingViewportFrame: number | null = null
+  let lastViewportSize: { width: number; height: number } | null = null
   const [topAnchorId, setTopAnchorId] = createSignal<string | undefined>(undefined)
   const [topAnchorLocked, setTopAnchorLocked] = createSignal(false)
   const [topAnchorSetAt, setTopAnchorSetAt] = createSignal(0)
@@ -232,10 +250,102 @@ export function SessionPane(props: SessionPaneProps) {
     setIsAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 50)
   }
 
+  const captureViewportAnchor = (container: HTMLElement): ViewportAnchor | null => {
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50
+    if (atBottom) return { type: "bottom" }
+
+    const containerRect = container.getBoundingClientRect()
+    const elements = Array.from(container.querySelectorAll<HTMLElement>("[data-message-id]"))
+    for (const el of elements) {
+      const id = el.dataset.messageId
+      if (!id) continue
+      const offset = el.getBoundingClientRect().top - containerRect.top
+      if (offset >= 0) return { type: "message", id, offset }
+    }
+
+    const last = elements[elements.length - 1]
+    const id = last?.dataset.messageId
+    if (!last || !id) return null
+    const offset = last.getBoundingClientRect().top - containerRect.top
+    return { type: "message", id, offset }
+  }
+
+  const restoreViewportAnchor = (container: HTMLElement, anchor: ViewportAnchor) => {
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight)
+
+    if (anchor.type === "bottom") {
+      if (Math.abs(container.scrollTop - maxScrollTop) > 1) {
+        container.scrollTop = maxScrollTop
+      }
+      return true
+    }
+
+    const escaped =
+      typeof CSS !== "undefined" && typeof CSS.escape === "function"
+        ? CSS.escape(anchor.id)
+        : anchor.id.replaceAll('"', '\\"')
+    const el = container.querySelector(`[data-message-id="${escaped}"]`) as HTMLElement | null
+    if (!el) return false
+
+    const containerRect = container.getBoundingClientRect()
+    const offset = el.getBoundingClientRect().top - containerRect.top
+    const delta = offset - anchor.offset
+    if (Math.abs(delta) < 1) return true
+
+    const next = Math.min(Math.max(0, container.scrollTop + delta), maxScrollTop)
+    if (Math.abs(container.scrollTop - next) > 1) {
+      container.scrollTop = next
+    }
+    return true
+  }
+
+  const trackViewportStability = (container: HTMLElement) => {
+    if (pendingViewportFrame) cancelAnimationFrame(pendingViewportFrame)
+    lastViewportSize = { width: container.clientWidth, height: container.clientHeight }
+    pendingViewportFrame = requestAnimationFrame(() => {
+      const current = { width: container.clientWidth, height: container.clientHeight }
+      if (!lastViewportSize) return
+      if (current.width === lastViewportSize.width && current.height === lastViewportSize.height) {
+        setPendingViewportAnchor(null)
+        lastViewportSize = null
+        pendingViewportFrame = null
+      }
+    })
+  }
+
+  const applyPendingViewportAnchor = (container: HTMLElement) => {
+    const anchor = pendingViewportAnchor()
+    if (!anchor) return false
+    const restored = restoreViewportAnchor(container, anchor)
+    if (!restored) {
+      setPendingViewportAnchor(null)
+      lastViewportSize = null
+      if (pendingViewportFrame) {
+        cancelAnimationFrame(pendingViewportFrame)
+        pendingViewportFrame = null
+      }
+      return false
+    }
+    trackViewportStability(container)
+    setViewportAnchor(captureViewportAnchor(container))
+    return true
+  }
+
+  onCleanup(() => {
+    if (pendingViewportFrame) {
+      cancelAnimationFrame(pendingViewportFrame)
+      pendingViewportFrame = null
+    }
+  })
+
   const setScrollRef = (el: HTMLDivElement | undefined) => {
     setScrollContainer(el)
     autoScroll.scrollRef(el)
     setContainerHeight(el?.clientHeight ?? 0)
+    if (el) {
+      applyPendingViewportAnchor(el)
+      setViewportAnchor(captureViewportAnchor(el))
+    }
   }
 
   const getElementOffsetTop = (el: HTMLElement, container: HTMLElement) => {
@@ -335,21 +445,24 @@ export function SessionPane(props: SessionPaneProps) {
     const container = scrollContainer()
     if (!container) return
     const observer = new ResizeObserver(() => {
+      const restored = applyPendingViewportAnchor(container)
       setContainerHeight(container.clientHeight)
       updateContentEndOffset()
       updateTopAnchorLock(container)
-      const anchorId = topAnchorId()
-      if (anchorId && topAnchorLocked()) {
-        const targetTop = getTopAnchorTarget(anchorId, container)
-        const isAnchored = targetTop !== undefined && Math.abs(container.scrollTop - targetTop) < 2
-        if (isAnchored) {
-          requestAnimationFrame(() => {
-            scrollToMessageTop(anchorId, "auto")
-          })
-          return
+        if (!restored) {
+          const anchorId = topAnchorId()
+          if (anchorId && topAnchorLocked()) {
+            const targetTop = getTopAnchorTarget(anchorId, container)
+            const isAnchored = targetTop !== undefined && Math.abs(container.scrollTop - targetTop) < 2
+            if (isAnchored) {
+              requestAnimationFrame(() => {
+                scrollToMessageTop(anchorId, "auto")
+              })
+              return
+            }
+          }
+          clampTopAnchorScroll(container)
         }
-      }
-      clampTopAnchorScroll(container)
       updateIsAtBottom(container)
     })
     observer.observe(container)
@@ -361,9 +474,12 @@ export function SessionPane(props: SessionPaneProps) {
     const content = contentContainer()
     if (!container || !content) return
     const observer = new ResizeObserver(() => {
+      const restored = applyPendingViewportAnchor(container)
       updateContentEndOffset()
       updateTopAnchorLock(container)
-      clampTopAnchorScroll(container)
+      if (!restored) {
+        clampTopAnchorScroll(container)
+      }
       updateIsAtBottom(container)
     })
     observer.observe(content)
@@ -425,6 +541,23 @@ export function SessionPane(props: SessionPaneProps) {
         topAnchorUserIntent = false
         setSkipNextTopAnchor(true)
       },
+    ),
+  )
+
+  createRenderEffect(
+    on(
+      () => multiPane.maximizedPaneId(),
+      (next, prev) => {
+        const paneId = props.paneId
+        if (!paneId) return
+        if (next !== paneId && prev !== paneId) return
+        const container = scrollContainer()
+        if (!container) return
+        const anchor = viewportAnchor() ?? captureViewportAnchor(container)
+        if (!anchor) return
+        setPendingViewportAnchor(anchor)
+      },
+      { defer: true },
     ),
   )
 
@@ -601,6 +734,7 @@ export function SessionPane(props: SessionPaneProps) {
               const el = e.target as HTMLElement
               updateTopAnchorLock(el)
               clampTopAnchorScroll(el)
+              setViewportAnchor(captureViewportAnchor(el))
               updateIsAtBottom(el)
             }}
           >
