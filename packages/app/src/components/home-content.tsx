@@ -460,7 +460,9 @@ export function HomeContent(props: HomeContentProps) {
                                   <span class="truncate">{project.worktree.replace(homedir(), "~")}</span>
                                   <Show when={showRelativeTime()}>
                                     <span class="text-14-regular text-text-weak">
-                                      {DateTime.fromMillis(project.time.updated ?? project.time.created).toRelative()}
+                                      {project.time?.updated || project.time?.created
+                                        ? DateTime.fromMillis(project.time.updated ?? project.time.created).toRelative()
+                                        : ""}
                                     </span>
                                   </Show>
                                 </Button>

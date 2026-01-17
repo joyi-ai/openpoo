@@ -780,7 +780,26 @@ export default function Layout(props: ParentProps) {
   }): JSX.Element => {
     const sessionDirectory = createMemo(() => resolveSessionDirectory(props.session.directory, props.project))
     const notification = useNotification()
-    const updated = createMemo(() => DateTime.fromMillis(props.session.time.updated))
+    const [relative, setRelative] = createSignal("")
+    const formatRelative = (value: number | undefined) => {
+      if (!value) return ""
+      const valueTime = DateTime.fromMillis(value)
+      const raw =
+        Math.abs(valueTime.diffNow().as("seconds")) < 60
+        ? "Now"
+        : valueTime.toRelative({
+            style: "short",
+            unit: ["days", "hours", "minutes"],
+          })
+      if (!raw) return ""
+      return raw.replace(" ago", "").replace(/ days?/, "d").replace(" min.", "m").replace(" hr.", "h")
+    }
+    createEffect(() => {
+      const value = props.session.time.updated ?? props.session.time.created
+      setRelative(formatRelative(value))
+      const timer = setInterval(() => setRelative(formatRelative(value)), 60_000)
+      onCleanup(() => clearInterval(timer))
+    })
     const notifications = createMemo(() => notification.session.unseen(props.session.id))
     const hasError = createMemo(() => notifications().some((n) => n.type === "error"))
     const [sessionStore] = globalSync.child(sessionDirectory())
@@ -851,17 +870,7 @@ export default function Layout(props: ParentProps) {
                     </Match>
                     <Match when={true}>
                       <span class="text-12-regular text-text-weak text-right whitespace-nowrap">
-                        {Math.abs(updated().diffNow().as("seconds")) < 60
-                          ? "Now"
-                          : updated()
-                              .toRelative({
-                                style: "short",
-                                unit: ["days", "hours", "minutes"],
-                              })
-                              ?.replace(" ago", "")
-                              ?.replace(/ days?/, "d")
-                              ?.replace(" min.", "m")
-                              ?.replace(" hr.", "h")}
+                        {relative()}
                       </span>
                     </Match>
                   </Switch>

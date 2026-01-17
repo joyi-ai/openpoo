@@ -213,12 +213,8 @@ function createGlobalSync() {
     }
 
     const currentCount = store.session.length
-    const remaining = target - currentCount
+    let remaining = target - currentCount
     if (remaining <= 0) return
-
-    const afterID = sessionCursor(store.session)
-    const pageLimit = Math.max(1, remaining)
-    const limit = pageLimit + 1
 
     // Don't pass directory filter - let server return all project sessions.
     // Use a per-directory client so the server selects the right instance.
@@ -228,29 +224,43 @@ function createGlobalSync() {
       throwOnError: true,
       ...fetchConfig,
     })
-    const query = afterID ? { limit, afterID } : { limit }
-    const promise = sdk.session
-      .list(query)
-      .then((x) => {
-        const root = resolveDirectoryKey(resolvedDirectory)
-        const fallback = resolveDirectoryKey(globalStore.path.directory)
-        const projectById = globalStore.project.find((p) => p.id === store.project)
-        const projectByPath = globalStore.project.find((p) => {
-          if (resolveDirectoryKey(p.worktree) === root) return true
-          const sandboxes = p.sandboxes ?? []
-          return sandboxes.some((s) => resolveDirectoryKey(s) === root)
-        })
-        const project = projectById ?? projectByPath
-        const projectRoot = project ? resolveDirectoryKey(project.worktree) : undefined
-        const sandboxes = (project?.sandboxes ?? []).map(resolveDirectoryKey).filter(Boolean)
-        const allowed = new Set([root, projectRoot, ...sandboxes].filter(Boolean))
-        const allow = (input: string | undefined) => {
-          const dir = resolveDirectoryKey(input)
-          if (dir) return allowed.has(dir)
-          if (!fallback) return false
-          return root === fallback
+    const promise = (async () => {
+      const root = resolveDirectoryKey(resolvedDirectory)
+      const fallback = resolveDirectoryKey(globalStore.path.directory)
+      const projectById = globalStore.project.find((p) => p.id === store.project)
+      const projectByPath = globalStore.project.find((p) => {
+        if (resolveDirectoryKey(p.worktree) === root) return true
+        const sandboxes = p.sandboxes ?? []
+        return sandboxes.some((s) => resolveDirectoryKey(s) === root)
+      })
+      const project = projectById ?? projectByPath
+      const projectRoot = project ? resolveDirectoryKey(project.worktree) : undefined
+      const sandboxes = (project?.sandboxes ?? []).map(resolveDirectoryKey).filter(Boolean)
+      const allowed = new Set([root, projectRoot, ...sandboxes].filter(Boolean))
+      const allow = (input: string | undefined) => {
+        const dir = resolveDirectoryKey(input)
+        if (dir) return allowed.has(dir)
+        if (!fallback) return false
+        return root === fallback
+      }
+
+      let cursor = sessionCursor(store.session)
+      let hasMore = false
+      const sessions: Session[] = []
+      let guard = 0
+      while (remaining > 0) {
+        const pageLimit = Math.max(1, remaining)
+        const limit = pageLimit + 1
+        const query = cursor ? { limit, afterID: cursor } : { limit }
+        const response = await sdk.session.list(query)
+        const data = response.data ?? []
+        if (data.length === 0) {
+          hasMore = false
+          break
         }
-        const fetched = (x.data ?? [])
+        const pageHasMore = data.length > pageLimit
+        hasMore = pageHasMore
+        const page = data
           .filter((s) => !!s?.id)
           .filter((s) => !s.time?.archived)
           .filter((s) => allow(s.directory))
@@ -258,10 +268,19 @@ function createGlobalSync() {
             if (session.directory) return session
             return { ...session, directory: resolvedDirectory }
           })
-        const sessions = fetched.slice(0, pageLimit)
-        const hasMore = (x.data ?? []).length > pageLimit
-        batch(() => {
-          setStore("session_more", hasMore)
+          .slice(0, pageLimit)
+        sessions.push(...page)
+        remaining -= page.length
+        const last = data.at(-1)
+        cursor = last?.id
+        if (!pageHasMore || !cursor) break
+        guard += 1
+        if (guard > 20) break
+      }
+
+      batch(() => {
+        setStore("session_more", hasMore)
+        if (sessions.length > 0) {
           setStore(
             "session",
             produce((draft) => {
@@ -275,8 +294,9 @@ function createGlobalSync() {
               }
             }),
           )
-        })
+        }
       })
+    })()
       .catch((err) => {
         console.error("Failed to load sessions", err)
         const project = getFilename(resolvedDirectory)
