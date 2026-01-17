@@ -259,8 +259,10 @@ export function SessionPane(props: SessionPaneProps) {
     for (const el of elements) {
       const id = el.dataset.messageId
       if (!id) continue
-      const offset = el.getBoundingClientRect().top - containerRect.top
-      if (offset >= 0) return { type: "message", id, offset }
+      const rect = el.getBoundingClientRect()
+      const offset = rect.top - containerRect.top
+      const bottomOffset = rect.bottom - containerRect.top
+      if (bottomOffset > 0) return { type: "message", id, offset }
     }
 
     const last = elements[elements.length - 1]
@@ -556,6 +558,7 @@ export function SessionPane(props: SessionPaneProps) {
         const anchor = viewportAnchor() ?? captureViewportAnchor(container)
         if (!anchor) return
         setPendingViewportAnchor(anchor)
+        trackViewportStability(container)
       },
       { defer: true },
     ),
