@@ -104,7 +104,7 @@ export const ExperimentalRoutes = lazy(() =>
           ...errors(400),
         },
       }),
-      validator("json", Worktree.create.schema),
+      validator("json", Worktree.CreateInput),
       async (c) => {
         const body = c.req.valid("json")
         const worktree = await Worktree.create(body)

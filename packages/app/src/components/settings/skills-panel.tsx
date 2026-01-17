@@ -5,6 +5,7 @@ import { Tag } from "@opencode-ai/ui/tag"
 import { showToast } from "@opencode-ai/ui/toast"
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
+import type { PermissionActionConfig, PermissionObjectConfig, PermissionRuleConfig, PermissionConfig } from "@opencode-ai/sdk/v2/client"
 
 type SkillInfo = {
   name: string
@@ -12,7 +13,7 @@ type SkillInfo = {
   location: string
 }
 
-type PermissionRule = string | Record<string, string>
+type PermissionRule = PermissionRuleConfig
 
 function wildcardMatch(pattern: string, value: string): boolean {
   if (pattern === "*") return true
@@ -21,7 +22,7 @@ function wildcardMatch(pattern: string, value: string): boolean {
   return regex.test(value)
 }
 
-function normalizeRule(rule: PermissionRule | undefined): Record<string, string> {
+function normalizeRule(rule: PermissionRule | undefined): PermissionObjectConfig {
   if (!rule) return {}
   if (typeof rule === "string") return { "*": rule }
   return { ...rule }
@@ -55,10 +56,17 @@ export const SkillsPanel: Component = () => {
     }
   })
 
-  const skillRule = createMemo(() => normalizeRule(sync.data.config.permission?.skill as PermissionRule | undefined))
+  const permission = createMemo<Record<string, PermissionRule>>(() => {
+    const current = sync.data.config.permission
+    if (!current) return {}
+    if (typeof current === "string") return { "*": current }
+    return current as Record<string, PermissionRule>
+  })
 
-  const resolveAction = (rules: Record<string, string>, name: string) => {
-    let action: string | undefined
+  const skillRule = createMemo(() => normalizeRule(permission().skill))
+
+  const resolveAction = (rules: PermissionObjectConfig, name: string) => {
+    let action: PermissionActionConfig | undefined
     for (const [pattern, value] of Object.entries(rules)) {
       if (wildcardMatch(pattern, name)) action = value
     }
@@ -69,11 +77,8 @@ export const SkillsPanel: Component = () => {
 
   const isEnabled = (name: string) => skillAction(name) !== "deny"
 
-  const updatePermission = async (nextRule: Record<string, string>) => {
-    const nextPermission = {
-      ...(sync.data.config.permission ?? {}),
-      skill: nextRule,
-    }
+  const updatePermission = async (nextRule: PermissionObjectConfig) => {
+    const nextPermission = { ...permission(), skill: nextRule } as PermissionConfig
     const error = await sdk.client.config
       .update({ config: { permission: nextPermission } })
       .then(() => undefined)
@@ -93,7 +98,7 @@ export const SkillsPanel: Component = () => {
   const toggleSkill = async (name: string, nextEnabled: boolean) => {
     if (saving()) return
     setSaving(name)
-    const nextRule = normalizeRule(sync.data.config.permission?.skill as PermissionRule | undefined)
+    const nextRule = normalizeRule(permission().skill)
     if (nextEnabled) {
       delete nextRule[name]
       if (resolveAction(nextRule, name) === "deny") {

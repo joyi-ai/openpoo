@@ -622,7 +622,7 @@ export namespace Provider {
       },
       limit: {
         context: model.limit.context,
-        input: model.limit.input,
+        input: model.limit.context,
         output: model.limit.output,
       },
       capabilities: {

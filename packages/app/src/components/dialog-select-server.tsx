@@ -29,7 +29,11 @@ export function DialogSelectServer() {
   const navigate = useNavigate()
   const dialog = useDialog()
   const server = useServer()
-  const platform = usePlatform()
+  type PlatformDefaults = ReturnType<typeof usePlatform> & {
+    getDefaultServerUrl?: () => Promise<string | null>
+    setDefaultServerUrl?: (url: string | null) => Promise<void>
+  }
+  const platform = usePlatform() as PlatformDefaults
   const [store, setStore] = createStore({
     url: "",
     adding: false,

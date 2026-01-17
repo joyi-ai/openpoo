@@ -432,6 +432,10 @@ export type Part =
       prompt: string
       description: string
       agent: string
+      model?: {
+        providerID: string
+        modelID: string
+      }
       command?: string
     }
   | ReasoningPart
@@ -676,6 +680,14 @@ export type EventMcpToolsChanged = {
   }
 }
 
+export type EventMcpBrowserOpenFailed = {
+  type: "mcp.browser.open.failed"
+  properties: {
+    mcpName: string
+    url: string
+  }
+}
+
 export type EventCommandExecuted = {
   type: "command.executed"
   properties: {
@@ -917,6 +929,7 @@ export type Event =
   | EventFileEdited
   | EventTodoUpdated
   | EventMcpToolsChanged
+  | EventMcpBrowserOpenFailed
   | EventCommandExecuted
   | EventAskuserAsked
   | EventAskuserReplied
@@ -2034,6 +2047,10 @@ export type SubtaskPartInput = {
   prompt: string
   description: string
   agent: string
+  model?: {
+    providerID: string
+    modelID: string
+  }
   command?: string
 }
 
@@ -2101,6 +2118,7 @@ export type Model = {
   }
   limit: {
     context: number
+    input?: number
     output: number
   }
   status: "alpha" | "beta" | "deprecated" | "active"

@@ -43,6 +43,14 @@ export namespace LLM {
 
   export type StreamOutput = StreamTextResult<ToolSet, unknown>
 
+  export function hasToolCalls(messages: ModelMessage[]): boolean {
+    return messages.some((message) => {
+      const content = message.content
+      if (!Array.isArray(content)) return false
+      return content.some((part) => part.type === "tool-call" || part.type === "tool-result")
+    })
+  }
+
   export async function stream(input: StreamInput) {
     const l = log
       .clone()

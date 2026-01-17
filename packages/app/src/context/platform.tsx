@@ -53,7 +53,7 @@ export type Platform = {
   setDefaultServerUrl?(url: string | null): Promise<void>
 }
 
-export const { use: usePlatform, provider: PlatformProvider } = createSimpleContext({
+export const { use: usePlatform, provider: PlatformProvider } = createSimpleContext<Platform, { value: Platform }>({
   name: "Platform",
   init: (props: { value: Platform }) => {
     return props.value

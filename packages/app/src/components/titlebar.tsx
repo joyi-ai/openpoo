@@ -9,7 +9,8 @@ import { useCommand } from "@/context/command"
 
 export function Titlebar() {
   const layout = useLayout()
-  const platform = usePlatform()
+  type PlatformWithOS = ReturnType<typeof usePlatform> & { os?: "macos" | "windows" | "linux" }
+  const platform = usePlatform() as PlatformWithOS
   const command = useCommand()
   const theme = useTheme()
 

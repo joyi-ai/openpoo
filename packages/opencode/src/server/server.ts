@@ -29,7 +29,7 @@ import { Command } from "../command"
 import { ProviderAuth } from "../provider/auth"
 import { ProviderRouting } from "../provider/routing"
 import { Global } from "../global"
-import { ProjectRoute } from "./project"
+import { ProjectRoutes } from "./routes/project"
 import { ClaudePluginRoute } from "@/claude-plugin/route"
 import { ToolRegistry } from "../tool/registry"
 import { zodToJsonSchema } from "zod-to-json-schema"
@@ -57,7 +57,7 @@ import { PlanMode } from "@/session/plan-mode"
 import { Skill } from "@/skill/skill"
 import { Installation } from "@/installation"
 import { MDNS } from "./mdns"
-import { QuestionRoute } from "./question"
+import { QuestionRoutes } from "./routes/question"
 import { ThemeRoute } from "./theme"
 import { Worktree } from "@/worktree"
 // @ts-ignore This global is needed to prevent ai-sdk from logging warnings to stdout https://github.com/vercel/ai/blob/2dc67e0ef538307f21368db32d5a12345d98831b/packages/ai/src/logger/log-warnings.ts#L85
@@ -511,7 +511,7 @@ export namespace Server {
         )
         .use(validator("query", z.object({ directory: z.string().optional() })))
 
-        .route("/project", ProjectRoute)
+        .route("/project", ProjectRoutes())
         .route("/claude-plugin", ClaudePluginRoute)
         .get(
           "/claude-code/commands",
@@ -545,7 +545,7 @@ export namespace Server {
             return c.json(commands)
           },
         )
-        .route("/question", QuestionRoute)
+        .route("/question", QuestionRoutes())
         .route("/theme", ThemeRoute)
         .get(
           "/pty",

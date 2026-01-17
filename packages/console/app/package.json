@@ -15,6 +15,8 @@
     "@ibm/plex": "6.4.1",
     "@jsx-email/render": "1.1.1",
     "@kobalte/core": "catalog:",
+    "@smithy/eventstream-codec": "4.2.7",
+    "@smithy/util-utf8": "4.2.0",
     "@openauthjs/openauth": "catalog:",
     "@opencode-ai/console-core": "workspace:*",
     "@opencode-ai/console-mail": "workspace:*",
@@ -33,6 +35,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@webgpu/types": "0.1.53",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
     "wrangler": "4.50.0"
