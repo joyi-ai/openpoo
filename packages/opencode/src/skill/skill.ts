@@ -20,14 +20,6 @@ export namespace Skill {
   })
   export type Info = z.infer<typeof Info>
 
-  export const Source = z.enum(["opencode", "claude", "claude-plugin"])
-  export type Source = z.infer<typeof Source>
-
-  export const InfoWithSource = Info.extend({
-    source: Source,
-  })
-  export type InfoWithSource = z.infer<typeof InfoWithSource>
-
   const Name = z.string().min(1).refine(
     (value) => {
       if (value.includes("\\")) return false
@@ -191,14 +183,6 @@ export namespace Skill {
 
   export async function all() {
     return state().then((x) => Object.values(x.skills))
-  }
-
-  export async function allWithSources(): Promise<InfoWithSource[]> {
-    const data = await state()
-    return Object.entries(data.skills).map(([name, info]) => ({
-      ...info,
-      source: data.sources[name],
-    }))
   }
 
   export async function isClaudeSkill(name: string) {

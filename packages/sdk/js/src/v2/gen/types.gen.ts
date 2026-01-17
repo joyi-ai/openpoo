@@ -1761,10 +1761,6 @@ export type Config = {
     ignore?: Array<string>
   }
   plugin?: Array<string>
-  /**
-   * List of disabled plugin identifiers
-   */
-  pluginDisabled?: Array<string>
   snapshot?: boolean
   /**
    * Git worktree configuration for session isolation
@@ -3225,13 +3221,12 @@ export type SkillListData = {
 
 export type SkillListResponses = {
   /**
-   * List of skills with source information
+   * List of skills
    */
   200: Array<{
     name: string
     description: string
     location: string
-    source: "opencode" | "claude" | "claude-plugin"
   }>
 }
 

@@ -15,7 +15,7 @@ import {
 } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { createFocusSignal } from "@solid-primitives/active-element"
-import { LocalProvider, useLocal } from "@/context/local"
+import { useLocal } from "@/context/local"
 import { useFile, type FileSelection } from "@/context/file"
 import {
   ContentPart,
@@ -27,9 +27,9 @@ import {
   AgentPart,
 } from "@/context/prompt"
 import { useLayout } from "@/context/layout"
-import { SDKProvider, useSDK } from "@/context/sdk"
+import { useSDK } from "@/context/sdk"
 import { useNavigate, useParams } from "@solidjs/router"
-import { SyncProvider, useSync } from "@/context/sync"
+import { useSync } from "@/context/sync"
 import { FileIcon } from "@opencode-ai/ui/file-icon"
 import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
@@ -45,7 +45,7 @@ import { Identifier } from "@/utils/id"
 import { SessionContextUsage } from "@/components/session-context-usage"
 import { usePlatform } from "@/context/platform"
 import { VoiceButton } from "@/components/voice-button"
-import { SettingsDialog, SettingsDialogButton } from "@/components/settings-dialog"
+import { SettingsDialog } from "@/components/settings-dialog"
 import { DialogSelectModel } from "@/components/dialog-select-model"
 import { DialogDeleteWorktree } from "@/components/dialog-delete-worktree"
 import { makeContextKey, makeSessionKey } from "@/utils/layout-key"
@@ -964,15 +964,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       return true
     }
     if (action.kind === "settings") {
-      dialog.show(() => (
-        <SDKProvider directory={sdk.directory}>
-          <SyncProvider>
-            <LocalProvider>
-              <SettingsDialog />
-            </LocalProvider>
-          </SyncProvider>
-        </SDKProvider>
-      ))
+      dialog.show(() => <SettingsDialog />)
       return true
     }
     if (action.kind === "link") {
@@ -2328,11 +2320,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
   return (
     <div class="relative size-full _max-h-[320px] flex flex-col">
-      <div class="absolute top-2 right-2 z-10">
-        <Tooltip placement="left" value="Settings">
-          <SettingsDialogButton />
-        </Tooltip>
-      </div>
       <MegaSelector floating />
       <Show when={store.popover}>
         <div
@@ -2665,6 +2652,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               </Match>
               <Match when={store.mode === "normal"}>
                 <MegaSelector />
+                <WorktreeToggleButton />
                 <Show when={inlineNotifier()}>
                   <div class="flex items-center h-6 px-2 text-12-regular text-text-subtle/70 animate-in slide-in-from-bottom-1 fade-in duration-200">
                     {inlineNotifier()}
@@ -2687,6 +2675,33 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             />
             <div class="flex items-center gap-2">
               <SessionContextUsage sessionId={effectiveSessionId()} contextKey={contextKey()} />
+              <Show when={(info() as any)?.worktree?.path}>
+                <button
+                  type="button"
+                  class="text-12-regular text-text-critical-base hover:text-text-critical-base-hover hover:underline"
+                  onClick={() => {
+                    const session = info()
+                    const worktreePath = (session as any)?.worktree?.path
+                    if (!worktreePath || !session) return
+                    dialog.show(() => (
+                      <DialogDeleteWorktree
+                        worktreePath={worktreePath}
+                        onConfirm={async () => {
+                          await sdk.client.global.worktree.delete({
+                            directory: worktreePath,
+                          })
+                          showToast({
+                            title: "Worktree deleted",
+                            variant: "success",
+                          })
+                        }}
+                      />
+                    ))
+                  }}
+                >
+                  Delete worktree
+                </button>
+              </Show>
               <Show when={store.mode === "normal"}>
                 <Tooltip placement="top" value="Attach image">
                   <Button type="button" variant="ghost" class="size-6" onClick={() => fileInputRef.click()}>

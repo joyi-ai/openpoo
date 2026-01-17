@@ -762,17 +762,17 @@ export namespace Server {
             operationId: "skill.list",
             responses: {
               200: {
-                description: "List of skills with source information",
+                description: "List of skills",
                 content: {
                   "application/json": {
-                    schema: resolver(Skill.InfoWithSource.array()),
+                    schema: resolver(Skill.Info.array()),
                   },
                 },
               },
             },
           }),
           async (c) => {
-            return c.json(await Skill.allWithSources())
+            return c.json(await Skill.all())
           },
         )
         .post(

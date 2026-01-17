@@ -21,34 +21,19 @@ import { usePlatform } from "@/context/platform"
 import { formatKeybind } from "@/context/command"
 import { useKeybindCapture } from "@/hooks/use-keybind-capture"
 import { McpPanel } from "@/components/dialog-select-mcp"
-import { SkillsPanel } from "@/components/skills-panel"
-import { PluginsPanel } from "@/components/plugins-panel"
-import { SDKProvider, useSDK } from "@/context/sdk"
-import { SyncProvider } from "@/context/sync"
-import { LocalProvider } from "@/context/local"
+import Marketplace from "@/pages/marketplace"
 
-type SettingsTab = "voice" | "skills" | "mcp" | "plugins"
+type SettingsTab = "voice" | "skills" | "mcp" | "plugins" | "marketplace"
 
 export const SettingsDialogButton: Component = () => {
   const dialog = useDialog()
-  const sdk = useSDK()
 
   return (
     <IconButton
       icon="settings-gear"
       variant="ghost"
       class="size-6"
-      onClick={() =>
-        dialog.show(() => (
-          <SDKProvider directory={sdk.directory}>
-            <SyncProvider>
-              <LocalProvider>
-                <SettingsDialog />
-              </LocalProvider>
-            </SyncProvider>
-          </SDKProvider>
-        ))
-      }
+      onClick={() => dialog.show(() => <SettingsDialog />)}
     />
   )
 }
@@ -97,6 +82,7 @@ export const SettingsDialog: Component<{ initialTab?: SettingsTab }> = (props) =
               { id: "skills", label: "Skills" },
               { id: "mcp", label: "MCP" },
               { id: "plugins", label: "Plugins" },
+              { id: "marketplace", label: "Marketplace" },
             ]}
           >
             {(item) => <Tabs.Trigger value={item.id}>{item.label}</Tabs.Trigger>}
@@ -242,7 +228,7 @@ export const SettingsDialog: Component<{ initialTab?: SettingsTab }> = (props) =
         </Tabs.Content>
 
         <Tabs.Content value="skills">
-          <SkillsPanel />
+          <div class="px-2.5 pb-3 text-13-regular text-text-weak">Skills configuration coming next.</div>
         </Tabs.Content>
 
         <Tabs.Content value="mcp">
@@ -250,7 +236,11 @@ export const SettingsDialog: Component<{ initialTab?: SettingsTab }> = (props) =
         </Tabs.Content>
 
         <Tabs.Content value="plugins">
-          <PluginsPanel />
+          <div class="px-2.5 pb-3 text-13-regular text-text-weak">OpenCode plugin configuration coming next.</div>
+        </Tabs.Content>
+
+        <Tabs.Content value="marketplace">
+          <Marketplace />
         </Tabs.Content>
       </Tabs>
     </Dialog>
