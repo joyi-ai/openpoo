@@ -1117,40 +1117,6 @@ export default function Layout(props: ParentProps) {
               </Tooltip>
             </Match>
           </Switch>
-          <Tooltip placement="right" value="MCP servers" inactive={expanded()}>
-            <Button
-              class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
-              variant="ghost"
-              size="large"
-              icon="mcp"
-              onClick={openMcp}
-            >
-              <Show when={expanded()}>MCP servers</Show>
-            </Button>
-          </Tooltip>
-          <Tooltip placement="right" value="Marketplace" inactive={expanded()}>
-            <Button
-              as={A}
-              href="/marketplace"
-              class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
-              variant="ghost"
-              size="large"
-              icon="code-lines"
-            >
-              <Show when={expanded()}>Marketplace</Show>
-            </Button>
-          </Tooltip>
-          <Tooltip placement="right" value="Settings" inactive={expanded()}>
-            <Button
-              class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
-              variant="ghost"
-              size="large"
-              icon="settings-gear"
-              onClick={openSettings}
-            >
-              <Show when={expanded()}>Settings</Show>
-            </Button>
-          </Tooltip>
           {/* <Tooltip placement="right" value="Share feedback" inactive={expanded()}>
             <Button
               as={"a"}

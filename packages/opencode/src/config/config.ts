@@ -866,6 +866,7 @@ export namespace Config {
         })
         .optional(),
       plugin: z.string().array().optional(),
+      pluginDisabled: z.string().array().optional().describe("List of disabled plugin identifiers"),
       snapshot: z.boolean().optional(),
       worktree: z
         .object({

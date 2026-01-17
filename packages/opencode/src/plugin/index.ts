@@ -81,9 +81,16 @@ export namespace Plugin {
     if (!Flag.OPENCODE_DISABLE_DEFAULT_PLUGINS) {
       plugins.push(...BUILTIN)
     }
+    const disabledPlugins = new Set(config.pluginDisabled ?? [])
     for (const plugin of plugins) {
       // ignore old codex plugin since it is supported first party now
       if (plugin.includes("opencode-openai-codex-auth")) continue
+      // Check if plugin is disabled
+      const pluginName = Config.getPluginName(plugin)
+      if (disabledPlugins.has(pluginName) || disabledPlugins.has(plugin)) {
+        log.info("skipping disabled plugin", { name: pluginName })
+        continue
+      }
       log.info("loading plugin", { path: plugin })
       const name = Config.getPluginName(plugin)
       const resolved = await resolvePlugin(plugin)

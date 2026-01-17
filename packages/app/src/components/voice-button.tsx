@@ -5,6 +5,9 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { Spinner } from "@opencode-ai/ui/spinner"
 import { useVoice } from "@/context/voice"
+import { SDKProvider, useSDK } from "@/context/sdk"
+import { SyncProvider } from "@/context/sync"
+import { LocalProvider } from "@/context/local"
 import { SettingsDialog } from "./settings-dialog"
 
 interface VoiceButtonProps {
@@ -14,6 +17,7 @@ interface VoiceButtonProps {
 export function VoiceButton(props: VoiceButtonProps) {
   const voice = useVoice()
   const dialog = useDialog()
+  const sdk = useSDK()
 
   // Watch for transcription results and call the callback
   createEffect(() => {
@@ -27,7 +31,15 @@ export function VoiceButton(props: VoiceButtonProps) {
   const handleClick = () => {
     // If model not ready, show settings dialog to download
     if (voice.state.modelStatus() !== "ready") {
-      dialog.show(() => <SettingsDialog />)
+      dialog.show(() => (
+        <SDKProvider directory={sdk.directory}>
+          <SyncProvider>
+            <LocalProvider>
+              <SettingsDialog />
+            </LocalProvider>
+          </SyncProvider>
+        </SDKProvider>
+      ))
       return
     }
 

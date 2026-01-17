@@ -1,0 +1,6 @@
+{
+  "permission": {
+    "skill.test-skill": "deny"
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
