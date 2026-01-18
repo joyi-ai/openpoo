@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
+import { createMemo, createResource, createSignal, For, Match, Show, Switch } from "solid-js"
 import { Button } from "@opencode-ai/ui/button"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { Logo } from "@opencode-ai/ui/logo"
@@ -11,6 +11,7 @@ import { useGlobalSync } from "@/context/global-sync"
 import { useLayout } from "@/context/layout"
 import { usePlatform } from "@/context/platform"
 import { useServer } from "@/context/server"
+import { useGlobalSDK } from "@/context/global-sdk"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
 import { DialogSelectServer } from "@/components/dialog-select-server"
 import { DateTime } from "luxon"
@@ -40,6 +41,7 @@ export function HomeContent(props: HomeContentProps) {
   const platform = usePlatform()
   const dialog = useDialog()
   const server = useServer()
+  const globalSDK = useGlobalSDK()
   const homedir = createMemo(() => sync.data.path.home)
   const [internalSelected, setInternalSelected] = createSignal<string | undefined>(undefined)
   const [showMore, setShowMore] = createSignal(false)
@@ -112,6 +114,21 @@ export function HomeContent(props: HomeContentProps) {
     })
   })
 
+  const projectLookup = createMemo(() => {
+    const selected = selectedProject()
+    if (!selected) return undefined
+    if (selectedProjectData()) return undefined
+    return selected
+  })
+
+  const [projectInfo] = createResource(projectLookup, (directory) => {
+    if (!directory) return undefined
+    return globalSDK.client.project
+      .current({ directory })
+      .then((result) => result.data)
+      .catch(() => undefined)
+  })
+
   // Recent projects: exclude selected, limit to 5 (sidebar-based ordering)
   const recentProjects = createMemo(() => {
     const selectedKey = selectedProjectKey()
@@ -165,13 +182,13 @@ export function HomeContent(props: HomeContentProps) {
   const worktreeProject = createMemo(() => {
     const selected = selectedProject()
     if (!selected) return undefined
-    return (
-      selectedProjectData() ?? {
-        worktree: selected,
-        sandboxes: [],
-        vcs: undefined,
-      }
-    )
+    const project = selectedProjectData() ?? projectInfo()
+    if (project) return project
+    return {
+      worktree: selected,
+      sandboxes: [],
+      vcs: undefined,
+    }
   })
 
   const worktreePaths = createMemo(() => {
