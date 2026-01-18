@@ -35,6 +35,12 @@ export type LocalModel = Omit<Model, "provider"> & {
   latest?: boolean
 }
 export type ModelKey = { providerID: string; modelID: string }
+type ModeState = {
+  model?: ModelKey
+  agent?: string
+  variant?: string | null
+  thinking?: boolean
+}
 
 export type FileContext = { type: "file"; path: string; selection?: TextSelection }
 export type ContextItem = FileContext
@@ -199,6 +205,30 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       }
     })()
 
+    const modeState = (() => {
+      const [store, setStore, _, ready] = persisted(
+        Persist.global("mode_state", ["mode.state.v1"]),
+        createStore<{ byMode: Record<string, ModeState> }>({ byMode: {} }),
+      )
+
+      const get = () => {
+        const id = mode.current()?.id
+        if (!id) return undefined
+        return store.byMode[id]
+      }
+
+      const set = (value: Partial<ModeState>) => {
+        const id = mode.current()?.id
+        if (!id) return
+        setStore("byMode", id, (prev) => {
+          const base = prev ?? {}
+          return { ...base, ...value }
+        })
+      }
+
+      return { ready, get, set }
+    })()
+
     function isModelValid(model: ModelKey) {
       const providerOverride = mode.providerOverride()
       const provider = providers.all().find((x) => x.id === model.providerID)
@@ -269,9 +299,12 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           if (name && available.some((x) => x.name === name)) {
             setStore("current", name)
             setStore("lastUsed", name)
+            modeState.set({ agent: name })
             return
           }
           setStore("current", available[0].name)
+          setStore("lastUsed", available[0].name)
+          modeState.set({ agent: available[0].name })
         },
         move(direction: 1 | -1) {
           const available = list()
@@ -285,6 +318,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           const value = available[next]
           if (!value) return
           setStore("current", value.name)
+          setStore("lastUsed", value.name)
+          modeState.set({ agent: value.name })
           if (value.model)
             model.set({
               providerID: value.model.providerID,
@@ -389,11 +424,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           }
         }
 
-        for (const item of store.recent) {
-          if (isModelValid(item)) {
-            return item
-          }
-        }
+        const saved = modeState.get()
+        if (saved?.model && isModelValid(saved.model)) return saved.model
 
         const providerOverride = mode.providerOverride()
         if (providerOverride) {
@@ -466,7 +498,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       function updateVisibility(model: ModelKey, visibility: "show" | "hide") {
         const index = store.user.findIndex((x) => x.modelID === model.modelID && x.providerID === model.providerID)
         if (index >= 0) {
-          setStore("user", index, { visibility })
+          setStore("user", index, (prev) => ({ ...(prev ?? {}), visibility }))
         } else {
           setStore("user", store.user.length, { ...model, visibility })
         }
@@ -490,6 +522,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
               if (uniq.length > 5) uniq.pop()
               setStore("recent", uniq)
             }
+            if (nextModel) modeState.set({ model: nextModel })
           })
         },
         visible(model: ModelKey) {
@@ -513,7 +546,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         setFavorite(model: ModelKey, favorite: boolean) {
           const index = store.user.findIndex((x) => x.modelID === model.modelID && x.providerID === model.providerID)
           if (index >= 0) {
-            setStore("user", index, { favorite })
+            setStore("user", index, (prev) => ({ ...(prev ?? {}), favorite }))
           } else {
             setStore("user", store.user.length, { ...model, visibility: "show", favorite })
           }
@@ -549,6 +582,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             } else {
               setStore("variant", key, value)
             }
+            modeState.set({ variant: value ?? null })
           },
           cycle() {
             const variants = this.list()
@@ -578,10 +612,13 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           /** Set thinking state */
           set(enabled: boolean) {
             setStore("thinking", enabled)
+            modeState.set({ thinking: enabled })
           },
           /** Toggle thinking state */
           toggle() {
-            setStore("thinking", !this.current())
+            const next = !this.current()
+            setStore("thinking", next)
+            modeState.set({ thinking: next })
           },
         },
       }
@@ -589,21 +626,28 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
 
     createEffect(
       on(
-        () => mode.current()?.id,
+        () => [mode.current()?.id, modeState.ready()],
         () => {
+          if (!modeState.ready()) return
           const available = agent.list()
           if (available.length === 0) return
-          const lastUsed = agent.lastUsed()
-          if (lastUsed && available.some((item) => item.name === lastUsed)) {
-            agent.set(lastUsed)
-            return
-          }
+          const saved = modeState.get()
+          const savedAgent = saved?.agent
           const preferred = mode.current()?.defaultAgent
-          if (preferred && available.some((item) => item.name === preferred)) {
-            agent.set(preferred)
-            return
-          }
-          agent.set(available[0].name)
+          const fallback = available[0].name
+          const agentName =
+            savedAgent && available.some((item) => item.name === savedAgent)
+              ? savedAgent
+              : preferred && available.some((item) => item.name === preferred)
+                ? preferred
+                : fallback
+          agent.set(agentName)
+          const savedModel = saved?.model
+          if (savedModel) model.set(savedModel)
+          const savedVariant = saved?.variant
+          if (savedVariant !== undefined) model.variant.set(savedVariant === null ? undefined : savedVariant)
+          const savedThinking = saved?.thinking
+          if (savedThinking !== undefined) model.thinking.set(savedThinking)
         },
         { defer: true },
       ),
@@ -617,17 +661,17 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       }
       const currentAgent = agent.current()
       if (currentAgent && available.some((item) => item.name === currentAgent.name)) return
-      const lastUsed = agent.lastUsed()
-      if (lastUsed && available.some((item) => item.name === lastUsed)) {
-        agent.set(lastUsed)
-        return
-      }
+      const saved = modeState.get()
+      const savedAgent = saved?.agent
       const preferred = mode.current()?.defaultAgent
-      if (preferred && available.some((item) => item.name === preferred)) {
-        agent.set(preferred)
-        return
-      }
-      agent.set(available[0].name)
+      const fallback = available[0].name
+      const agentName =
+        savedAgent && available.some((item) => item.name === savedAgent)
+          ? savedAgent
+          : preferred && available.some((item) => item.name === preferred)
+            ? preferred
+            : fallback
+      agent.set(agentName)
     })
 
     const file = (() => {
