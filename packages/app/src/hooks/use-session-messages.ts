@@ -11,6 +11,7 @@ function same<T>(a: readonly T[], b: readonly T[]) {
 
 export interface UseSessionMessagesOptions {
   sessionId: Accessor<string | undefined>
+  windowSize?: Accessor<number>
 }
 
 export interface UseSessionMessagesReturn {
@@ -53,8 +54,11 @@ export function useSessionMessages(options: UseSessionMessagesOptions): UseSessi
   const visibleUserMessages = createMemo(
     () => {
       const revert = revertMessageID()
-      if (!revert) return userMessages()
-      return userMessages().filter((m) => m.id < revert)
+      const list = revert ? userMessages().filter((m) => m.id < revert) : userMessages()
+      const limit = options.windowSize?.() ?? Number.POSITIVE_INFINITY
+      if (limit <= 0) return emptyUserMessages
+      if (list.length <= limit) return list
+      return list.slice(list.length - limit)
     },
     emptyUserMessages,
     { equals: same },

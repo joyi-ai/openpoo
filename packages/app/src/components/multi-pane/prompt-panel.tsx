@@ -7,6 +7,7 @@ import { usePrompt, type Prompt } from "@/context/prompt"
 import { useLocal } from "@/context/local"
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
+import { useScrollBehavior } from "@/context/scroll-behavior"
 import { PromptInput } from "@/components/prompt-input"
 import { Terminal } from "@/components/terminal"
 import { ResizeHandle } from "@opencode-ai/ui/resize-handle"
@@ -35,8 +36,26 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
     if (!sessionId) return undefined
     return sync.session.get(sessionId)
   })
+  const scrollBehavior = createMemo(() => useScrollBehavior(props.paneId))
 
   let editorRef: HTMLDivElement | undefined
+  let containerRef: HTMLDivElement | undefined
+  let resizeObserver: ResizeObserver | undefined
+
+  onMount(() => {
+    if (!containerRef) return
+    resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const height = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height
+      scrollBehavior().setComposerHeight(height)
+    })
+    resizeObserver.observe(containerRef)
+  })
+
+  onCleanup(() => {
+    resizeObserver?.disconnect()
+  })
 
   type SessionCache = {
     agent: string | undefined
@@ -275,7 +294,7 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
   )
 
   return (
-    <div class="shrink-0 flex flex-col">
+    <div ref={(el) => (containerRef = el)} class="shrink-0 flex flex-col">
       <div class="px-3 pt-2 flex justify-center">
         <div class="w-full max-w-[800px]">
           <PromptInput

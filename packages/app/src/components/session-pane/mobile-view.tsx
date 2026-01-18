@@ -9,6 +9,9 @@ export interface MobileViewProps {
   visibleUserMessages: Accessor<UserMessage[]>
   lastUserMessage: Accessor<UserMessage | undefined>
   working: Accessor<boolean>
+  composerHeight: Accessor<number>
+  scrollRef?: (el: HTMLElement | undefined) => void
+  contentRef?: (el: HTMLElement | undefined) => void
   onUserInteracted?: () => void
   onScroll?: (e: Event) => void
   messageActions?: {
@@ -26,26 +29,36 @@ export function MobileView(props: MobileViewProps) {
   })
 
   const MobileTurns = () => (
-    <div class="relative mt-2 min-w-0 w-full h-full overflow-y-auto no-scrollbar pb-12" onScroll={props.onScroll}>
-      <div class="flex flex-col gap-4 items-start justify-start mt-4">
+    <div
+      ref={props.scrollRef}
+      data-scroll-container="session-pane-mobile"
+      class="relative mt-2 min-w-0 w-full h-full overflow-y-auto no-scrollbar"
+      onScroll={props.onScroll}
+    >
+      <div
+        ref={props.contentRef}
+        class="flex flex-col gap-4 items-start justify-start mt-4"
+      >
         <For each={props.visibleUserMessages()}>
           {(message) => (
-            <SessionTurn
-              sessionID={props.sessionId!}
-              messageID={message.id}
-              lastUserMessageID={props.lastUserMessage()?.id}
-              stepsExpanded={store.mobileStepsExpanded[message.id] ?? false}
-              onStepsExpandedToggle={() => setStore("mobileStepsExpanded", message.id, (x) => !x)}
-              hideTitle={true}
-              onUserInteracted={props.onUserInteracted}
-              actions={props.messageActions}
-              classes={{
-                root: "min-w-0 w-full relative",
-                content:
-                  "flex flex-col justify-between !overflow-visible [&_[data-slot=session-turn-message-header]]:top-[-32px] [&_[data-slot=session-turn-message-content]]:!mt-0",
-                container: "px-4",
-              }}
-            />
+            <div data-message-id={message.id} class="w-full mb-2">
+              <SessionTurn
+                sessionID={props.sessionId!}
+                messageID={message.id}
+                lastUserMessageID={props.lastUserMessage()?.id}
+                stepsExpanded={store.mobileStepsExpanded[message.id] ?? false}
+                onStepsExpandedToggle={() => setStore("mobileStepsExpanded", message.id, (x) => !x)}
+                hideTitle={true}
+                onUserInteracted={props.onUserInteracted}
+                actions={props.messageActions}
+                classes={{
+                  root: "min-w-0 w-full relative",
+                  content:
+                    "flex flex-col justify-between !overflow-visible [&_[data-slot=session-turn-message-header]]:top-[-32px] [&_[data-slot=session-turn-message-content]]:!mt-0",
+                  container: "px-4",
+                }}
+              />
+            </div>
           )}
         </For>
       </div>

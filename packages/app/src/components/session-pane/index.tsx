@@ -5,6 +5,7 @@ import {
   createEffect,
   on,
   createSignal,
+  onCleanup,
   type Accessor,
 } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -18,11 +19,13 @@ import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { useLayout } from "@/context/layout"
 import { useMultiPane } from "@/context/multi-pane"
+import { useScrollBehavior } from "@/context/scroll-behavior"
 import { useHeaderOverlay } from "@/hooks/use-header-overlay"
 import { useSessionMessages } from "@/hooks/use-session-messages"
 import { useSessionSync } from "@/hooks/use-session-sync"
 import { useSessionCommands } from "@/hooks/use-session-commands"
 import { useMessageActions } from "@/hooks/use-message-actions"
+import { useSessionScroll } from "@/hooks/use-session-scroll"
 import { ThemeDropup } from "@/components/theme-dropup"
 import { SessionPaneHeader } from "./header"
 import { MobileView } from "./mobile-view"
@@ -31,6 +34,12 @@ import { getDirectory, getFilename } from "@opencode-ai/util/path"
 import { useNotification } from "@/context/notification"
 import type { UserMessage } from "@opencode-ai/sdk/v2"
 import { makeContextKey, makeSessionKey, makeViewKey } from "@/utils/layout-key"
+
+const MESSAGE_WINDOW_SIZE = 6
+const MESSAGE_WINDOW_RESET_MS = 120000
+const MESSAGE_WINDOW_TOP_THRESHOLD = 120
+const MESSAGE_WINDOW_BOTTOM_THRESHOLD = 50
+const MESSAGE_HISTORY_LOAD_DEBOUNCE_MS = 400
 
 export interface SessionPaneProps {
   paneId?: string
@@ -57,6 +66,14 @@ export function SessionPane(props: SessionPaneProps) {
   // Local state
   const [store, setStore] = createStore({
     stepsExpanded: {} as Record<string, boolean>,
+    windowPages: 1,
+    windowExpandArmed: true,
+    windowNearBottom: true,
+    windowResetTimer: undefined as ReturnType<typeof setTimeout> | undefined,
+    historyLoadArmed: false,
+    historyLoadLocked: false,
+    historyLoadTimer: undefined as ReturnType<typeof setTimeout> | undefined,
+    initialScrollDone: false,
   })
 
   const sessionId = createMemo(() => props.sessionId)
@@ -88,9 +105,12 @@ export function SessionPane(props: SessionPaneProps) {
     return id ? (sync.data.todo[id] ?? []) : []
   })
 
+  const windowSize = createMemo(() => MESSAGE_WINDOW_SIZE * store.windowPages)
+
   // Session messages hook
   const sessionMessages = useSessionMessages({
     sessionId,
+    windowSize,
   })
 
   const renderedUserMessages = createMemo(() => sessionMessages.visibleUserMessages())
@@ -113,6 +133,87 @@ export function SessionPane(props: SessionPaneProps) {
     directoryMatches: sdkDirectoryMatches,
   })
 
+  createEffect(
+    on(sessionId, () => {
+      const timer = store.windowResetTimer
+      if (timer) clearTimeout(timer)
+      if (timer) setStore("windowResetTimer", undefined)
+      const historyTimer = store.historyLoadTimer
+      if (historyTimer) clearTimeout(historyTimer)
+      if (historyTimer) setStore("historyLoadTimer", undefined)
+      setStore("windowPages", 1)
+      setStore("windowExpandArmed", true)
+      setStore("windowNearBottom", true)
+      setStore("historyLoadArmed", false)
+      setStore("historyLoadLocked", false)
+      setStore("initialScrollDone", false)
+      lastScrollTop.value = 0
+    }),
+  )
+
+  createEffect(
+    on(
+      () => [store.windowNearBottom, store.windowPages] as const,
+      ([nearBottom, pages]) => {
+        const timer = store.windowResetTimer
+        if (timer) clearTimeout(timer)
+        if (timer) setStore("windowResetTimer", undefined)
+        if (!nearBottom) return
+        if (pages <= 1) return
+        const nextTimer = setTimeout(() => {
+          setStore("windowPages", 1)
+          setStore("windowExpandArmed", true)
+        }, MESSAGE_WINDOW_RESET_MS)
+        setStore("windowResetTimer", nextTimer)
+      },
+      { defer: true },
+    ),
+  )
+
+  onCleanup(() => {
+    const timer = store.windowResetTimer
+    if (timer) clearTimeout(timer)
+    const historyTimer = store.historyLoadTimer
+    if (historyTimer) clearTimeout(historyTimer)
+  })
+
+  createEffect(
+    on(
+      () => [sessionId(), renderedUserMessages().length, scrollEl()] as const,
+      ([id, length, el]) => {
+        if (!id) return
+        if (length === 0) return
+        if (store.initialScrollDone) return
+        const fallback =
+          el ??
+          (document.querySelector('[data-scroll-container="session-pane"]') as HTMLElement | null) ??
+          (document.querySelector('[data-scroll-container="session-pane-mobile"]') as HTMLElement | null)
+        if (!fallback) {
+          setStore("initialScrollDone", true)
+          setStore("historyLoadArmed", false)
+          lastScrollTop.value = 0
+          return
+        }
+        requestAnimationFrame(() => {
+          const messages = fallback.querySelectorAll("[data-message-id]")
+          const last = messages[messages.length - 1] as HTMLElement | undefined
+          if (!last) {
+            setStore("initialScrollDone", true)
+            setStore("historyLoadArmed", false)
+            lastScrollTop.value = 0
+            return
+          }
+          const target = Math.max(0, last.offsetTop + last.offsetHeight - fallback.clientHeight)
+          fallback.scrollTop = target
+          setStore("initialScrollDone", true)
+          setStore("historyLoadArmed", false)
+          lastScrollTop.value = target
+        })
+      },
+      { defer: true },
+    ),
+  )
+
   createEffect(() => {
     const onWorktreeChange = props.onWorktreeChange
     if (!onWorktreeChange) return
@@ -134,6 +235,21 @@ export function SessionPane(props: SessionPaneProps) {
   const working = createMemo(
     () => status().type !== "idle" && sessionMessages.activeMessage()?.id === sessionMessages.lastUserMessage()?.id,
   )
+
+  // Scroll behavior for session pane (shared between desktop and mobile)
+  const scrollBehavior = useScrollBehavior(props.paneId, true)
+
+  // Desktop scroll behavior
+  const sessionScroll = useSessionScroll({
+    working,
+    composerHeight: scrollBehavior.composerHeight,
+    snapRequested: scrollBehavior.snapRequested,
+    clearSnapRequest: scrollBehavior.clearSnapRequest,
+    onUserScrolledAway: scrollBehavior.setUserScrolledAway,
+  })
+  const [scrollEl, setScrollEl] = createSignal<HTMLElement | undefined>(undefined)
+  const lastScrollTop = { value: 0 }
+
 
   createEffect(() => {
     const session = sessionId()
@@ -233,13 +349,45 @@ export function SessionPane(props: SessionPaneProps) {
   }
 
   const handleScroll = (e: Event) => {
+    // Handle session scroll behavior (auto-scroll, user scroll detection)
+    sessionScroll.handleScroll(e)
+
+    // Load more history when scrolled near top
     const el = e.target as HTMLElement
-    if (el.scrollTop > 120) return
+    const distanceFromBottom = el.scrollHeight - el.clientHeight - el.scrollTop
+    const nearBottom = distanceFromBottom <= MESSAGE_WINDOW_BOTTOM_THRESHOLD
+    if (nearBottom !== store.windowNearBottom) setStore("windowNearBottom", nearBottom)
+
+    const scrolledUp = el.scrollTop + 2 < lastScrollTop.value
+    if (scrolledUp && !store.historyLoadArmed) setStore("historyLoadArmed", true)
+    lastScrollTop.value = el.scrollTop
+
+    const awayFromTop = el.scrollTop > MESSAGE_WINDOW_TOP_THRESHOLD
+    if (awayFromTop && !store.windowExpandArmed) setStore("windowExpandArmed", true)
+    if (awayFromTop) return
+
+    if (store.windowExpandArmed) {
+      setStore("windowExpandArmed", false)
+      setStore("windowPages", (pages) => pages + 1)
+    }
+
     const id = sessionId()
     if (!id) return
     if (!sdkDirectoryMatches()) return
     if (!sync.session.history.more(id)) return
     if (sync.session.history.loading(id)) return
+    if (!store.historyLoadArmed) return
+    if (store.historyLoadLocked) return
+    const historyTimer = store.historyLoadTimer
+    if (historyTimer) clearTimeout(historyTimer)
+    setStore("historyLoadLocked", true)
+    setStore(
+      "historyLoadTimer",
+      setTimeout(() => {
+        setStore("historyLoadLocked", false)
+        setStore("historyLoadTimer", undefined)
+      }, MESSAGE_HISTORY_LOAD_DEBOUNCE_MS),
+    )
     void sync.session.history.loadMore(id)
   }
 
@@ -287,12 +435,21 @@ export function SessionPane(props: SessionPaneProps) {
             onMessageSelect={handleMessageSelect}
             wide={true}
           />
-          <div class="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar" onScroll={handleScroll}>
-            <div class="flex min-h-full flex-col">
-              <div class="flex flex-col gap-4 pt-6 pb-6">
+          <div
+            ref={(el) => {
+              setScrollEl(el)
+              sessionScroll.scrollRef(el)
+            }}
+            data-scroll-container="session-pane"
+            class="flex-1 min-w-0 min-h-0 overflow-y-auto no-scrollbar"
+            onScroll={handleScroll}
+          >
+            <div ref={sessionScroll.contentRef} class="flex flex-col">
+              <div class="flex flex-col gap-4 pt-6">
+
                 <For each={renderedUserMessages()}>
                   {(message) => (
-                    <div data-message-id={message.id}>
+                    <div data-message-id={message.id} class="mb-2">
                       <SessionTurn
                         sessionID={sessionId()!}
                         messageID={message.id}
@@ -316,8 +473,11 @@ export function SessionPane(props: SessionPaneProps) {
                   )}
                 </For>
               </div>
-              {/* Flexible spacer pushes footer to bottom for short content */}
-              <div class="flex-1" />
+              {/* Spacer to allow last message to scroll to top of viewport */}
+              <div
+                class="shrink-0"
+                style={{ height: `${Math.max(sessionScroll.containerHeight() - 100, 0)}px` }}
+              />
               {/* Todo footer - sticky at bottom, hides when all complete */}
               <SessionTodoFooter
                 todos={todos()}
@@ -451,6 +611,7 @@ export function SessionPane(props: SessionPaneProps) {
           visibleUserMessages={sessionMessages.visibleUserMessages}
           lastUserMessage={sessionMessages.lastUserMessage}
           working={working}
+          composerHeight={scrollBehavior.composerHeight}
           onScroll={handleScroll}
           messageActions={{
             onEdit: messageActions.editMessage,
