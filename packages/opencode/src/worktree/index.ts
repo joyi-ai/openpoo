@@ -197,6 +197,41 @@ export namespace Worktree {
     return input.toLowerCase()
   }
 
+  function normalizePath(input: string): string {
+    return normalizeCase(path.normalize(input))
+  }
+
+  function resolveCommonDir(input: string, cwd: string): string | undefined {
+    if (!input) return
+    if (path.isAbsolute(input)) return path.normalize(input)
+    return path.normalize(path.resolve(cwd, input))
+  }
+
+  async function listWorktrees(root: string): Promise<string[]> {
+    const output = await $`git worktree list --porcelain`.quiet().nothrow().cwd(root).text().catch(() => "")
+    if (!output) return []
+    return output
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("worktree "))
+      .map((line) => line.slice("worktree ".length).trim())
+      .filter(Boolean)
+      .map((line) => (path.isAbsolute(line) ? line : path.resolve(root, line)))
+      .map((line) => path.normalize(line))
+  }
+
+  async function unsandbox(directory: string) {
+    const items = await Project.list()
+    const target = normalizePath(directory)
+    for (const project of items) {
+      const sandboxes = project.sandboxes ?? []
+      for (const sandbox of sandboxes) {
+        if (normalizePath(sandbox) !== target) continue
+        await Project.removeSandbox(project.id, sandbox)
+      }
+    }
+  }
+
   async function branchExists(branch: string, cwd: string): Promise<boolean> {
     const result = await $`git show-ref --verify --quiet refs/heads/${branch}`.quiet().nothrow().cwd(cwd)
     return result.exitCode === 0
@@ -298,15 +333,6 @@ export namespace Worktree {
 
   export async function remove(directory: string): Promise<boolean> {
     const normalized = path.normalize(directory)
-    const root = managedRoot()
-
-    if (!isManaged(normalized)) {
-      throw new DeleteFailedError({
-        message: "Can only delete managed worktrees",
-        directory,
-      })
-    }
-
     const stat = await fs.stat(normalized).catch(() => undefined)
     if (!stat?.isDirectory()) {
       throw new NotFoundError({
@@ -315,15 +341,22 @@ export namespace Worktree {
       })
     }
 
-    const relative = normalized.slice(root.length).replace(/^[/\\]+/, "")
-    const parts = relative.split(/[/\\]/).filter(Boolean)
-    if (parts.length < 2) {
+    const target = normalizePath(normalized)
+    const projects = await Project.list()
+    const main = projects.some((project) => normalizePath(project.worktree) === target)
+    if (main) {
       throw new DeleteFailedError({
-        message: "Invalid managed worktree path",
+        message: "Cannot delete main worktree",
         directory,
       })
     }
-    const projectID = parts[0]
+
+    const sandboxed = projects.some((project) => {
+      const sandboxes = project.sandboxes ?? []
+      return sandboxes.some((sandbox) => normalizePath(sandbox) === target)
+    })
+    const managed = isManaged(normalized)
+    const known = sandboxed || managed
 
     const gitCommonDir = await $`git rev-parse --git-common-dir`
       .quiet()
@@ -333,14 +366,37 @@ export namespace Worktree {
       .then((x) => x.trim())
       .catch(() => undefined)
 
-    if (!gitCommonDir) {
+    const common = resolveCommonDir(gitCommonDir ?? "", normalized)
+    const root =
+      (common ? path.dirname(common) : undefined) ??
+      (() => {
+        for (const project of projects) {
+          const sandboxes = project.sandboxes ?? []
+          for (const sandbox of sandboxes) {
+            if (normalizePath(sandbox) === target) return project.worktree
+          }
+          const base = normalizePath(path.join(Global.Path.data, "worktree", project.id))
+          if (target.startsWith(base + path.sep)) return project.worktree
+        }
+      })()
+
+    const rootKey = root ? normalizePath(root) : undefined
+    if (rootKey && rootKey === target) {
+      throw new DeleteFailedError({
+        message: "Cannot delete main worktree",
+        directory,
+      })
+    }
+
+    const listed = root ? await listWorktrees(root) : []
+    const present = listed.some((item) => normalizePath(item) === target)
+    const allowed = present || known
+    if (!allowed) {
       throw new DeleteFailedError({
         message: "Not a valid git worktree",
         directory,
       })
     }
-
-    const mainRepoRoot = path.dirname(gitCommonDir)
 
     const disposeTargets = new Set<string>([directory, normalized])
     for (const target of disposeTargets) {
@@ -352,23 +408,25 @@ export namespace Worktree {
     const maxAttempts = 5
     const attempts = Array.from({ length: maxAttempts }, (_value, index) => index)
     for (const attempt of attempts) {
-      const removeResult = await $`git worktree remove --force ${normalized}`.quiet().nothrow().cwd(mainRepoRoot)
-      if (removeResult.exitCode === 0) {
-        await Project.removeSandbox(projectID, normalized)
-        log.info("worktree removed", { directory: normalized })
-        return true
-      }
+      if (root) {
+        const removeResult = await $`git worktree remove --force ${normalized}`.quiet().nothrow().cwd(root)
+        if (removeResult.exitCode === 0) {
+          await unsandbox(normalized)
+          log.info("worktree removed", { directory: normalized })
+          return true
+        }
 
-      const output = removeResult.stderr.toString() || removeResult.stdout.toString()
-      const last = attempt === maxAttempts - 1
-      if (!last) {
-        const delay = 500 * 2 ** attempt
-        log.info("worktree removal failed, retrying", { directory: normalized, attempt, delay, output })
-        await Bun.sleep(delay)
-        continue
-      }
+        const output = removeResult.stderr.toString() || removeResult.stdout.toString()
+        const last = attempt === maxAttempts - 1
+        if (!last) {
+          const delay = 500 * 2 ** attempt
+          log.info("worktree removal failed, retrying", { directory: normalized, attempt, delay, output })
+          await Bun.sleep(delay)
+          continue
+        }
 
-      log.warn("git worktree remove failed after retries", { directory: normalized, output })
+        log.warn("git worktree remove failed after retries", { directory: normalized, output })
+      }
     }
 
     log.warn("git worktree remove failed after retries, attempting manual cleanup", { directory: normalized })
@@ -381,13 +439,15 @@ export namespace Worktree {
       })
     if (!removed) return false
 
-    const pruneResult = await $`git worktree prune`.quiet().nothrow().cwd(mainRepoRoot)
-    if (pruneResult.exitCode !== 0) {
-      const output = pruneResult.stderr.toString() || pruneResult.stdout.toString()
-      log.warn("git worktree prune failed after manual cleanup", { directory: normalized, output })
+    if (root) {
+      const pruneResult = await $`git worktree prune`.quiet().nothrow().cwd(root)
+      if (pruneResult.exitCode !== 0) {
+        const output = pruneResult.stderr.toString() || pruneResult.stdout.toString()
+        log.warn("git worktree prune failed after manual cleanup", { directory: normalized, output })
+      }
     }
 
-    await Project.removeSandbox(projectID, normalized)
+    await unsandbox(normalized)
     log.info("worktree removed via manual cleanup", { directory: normalized })
     return true
   }

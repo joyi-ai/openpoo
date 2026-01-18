@@ -459,8 +459,8 @@ export namespace Server {
         .delete(
           "/global/worktree",
           describeRoute({
-            summary: "Delete managed worktree",
-            description: "Delete a managed git worktree by its path. Does not require project context.",
+            summary: "Delete worktree",
+            description: "Delete a git worktree by its path. Does not require project context.",
             operationId: "global.worktree.delete",
             responses: {
               200: {
