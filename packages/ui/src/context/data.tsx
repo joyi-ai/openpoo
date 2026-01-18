@@ -61,7 +61,17 @@ export type AskUserRespondFn = (input: {
   reject?: boolean
 }) => Promise<unknown>
 
-export type PlanModeRespondFn = (input: { requestID: string; approved?: boolean; reject?: boolean }) => Promise<unknown>
+export type PlanModeRespondResult = {
+  sessionID?: string
+}
+
+export type PlanModeRespondFn = (input: {
+  requestID: string
+  approved?: boolean
+  reject?: boolean
+  sessionID?: string
+  plan?: string
+}) => Promise<PlanModeRespondResult | undefined>
 
 export type SetAgentFn = (name: string) => void
 

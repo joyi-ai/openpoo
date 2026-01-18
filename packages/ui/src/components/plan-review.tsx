@@ -41,11 +41,17 @@ export const PlanReview: Component<PlanReviewProps> = (props) => {
     setIsSubmitting(true)
     setActiveAction("approve")
     try {
-      await data.respondToPlanMode({
+      const result = await data.respondToPlanMode({
         requestID: request.id,
         approved: true,
+        sessionID: request.sessionID ?? props.sessionID,
+        plan: plan(),
       })
-      // Auto-switch to build agent before setSubmitted (which triggers re-render)
+      const nextSessionID = result?.sessionID
+      if (nextSessionID && data.navigateToSession) {
+        data.navigateToSession(nextSessionID)
+      }
+      // Switch to build agent after approval before showing completion state
       data.setAgent?.("build")
       setSubmitted("approved")
     } catch {

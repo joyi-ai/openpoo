@@ -27,6 +27,7 @@ import { MultiPanePromptPanel } from "@/components/multi-pane/prompt-panel"
 import { PaneHome } from "@/components/multi-pane/pane-home"
 import { getPaneProjectLabel, getPaneState, getPaneTitle } from "@/utils/pane"
 import { useCommand } from "@/context/command"
+import { Identifier } from "@/utils/id"
 import { normalizeDirectoryKey } from "@/utils/directory"
 import { BottomBar } from "@/components/bottom-bar"
 
@@ -54,6 +55,8 @@ type PlanModeReplyInput = {
   requestID: string
   approved?: boolean
   reject?: boolean
+  sessionID?: string
+  plan?: string
 }
 
 type SyncContext = ReturnType<typeof useSync>
@@ -132,19 +135,19 @@ const createAskUserResponder = (sync: SyncContext, baseUrl: string, directory: s
   }
 }
 
-const createPlanModeResponder = (baseUrl: string, directory: string) => {
+const createPlanModeResponder = (sync: SyncContext, sdk: ReturnType<typeof useSDK>, directory: string) => {
   return async (input: PlanModeReplyInput) => {
     if (input.reject) {
-      const response = await fetch(`${baseUrl}/planmode/${input.requestID}/reject`, {
+      await fetch(`${sdk.url}/planmode/${input.requestID}/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-opencode-directory": directory,
         },
       })
-      return response.json()
+      return
     }
-    const response = await fetch(`${baseUrl}/planmode/${input.requestID}/reply`, {
+    await fetch(`${sdk.url}/planmode/${input.requestID}/reply`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -152,7 +155,110 @@ const createPlanModeResponder = (baseUrl: string, directory: string) => {
       },
       body: JSON.stringify({ approved: input.approved }),
     })
-    return response.json()
+    if (!input.approved) return
+
+    const plan = input.plan ?? ""
+    if (!plan) return
+
+    const sourceSessionID = input.sessionID
+    if (!sourceSessionID) return
+
+    const storedSession = sync.session.get(sourceSessionID)
+    const fetchedSession = storedSession
+      ? undefined
+      : await sdk.client.session
+          .get({ sessionID: sourceSessionID })
+          .then((session) => session.data)
+          .catch((error) => {
+            console.error("Failed to load plan session", error)
+            showToast({
+              variant: "error",
+              title: "Failed to start build",
+              description: "Please try again.",
+            })
+            return undefined
+          })
+    const sourceSession = storedSession ?? fetchedSession
+    if (!sourceSession) return
+
+    await sdk.client.session.abort({ sessionID: sourceSessionID }).catch(() => {})
+
+    const createdSession = await sdk.client.session
+      .create({
+        mode: sourceSession.mode,
+        agent: "build",
+        model: sourceSession.model,
+        variant: sourceSession.variant,
+        thinking: sourceSession.thinking,
+      })
+      .then((session) => session.data)
+      .catch((error) => {
+        console.error("Failed to create build session from plan", error)
+        showToast({
+          variant: "error",
+          title: "Failed to start build",
+          description: "Please try again.",
+        })
+        return undefined
+      })
+    if (!createdSession) return
+
+    const model = createdSession.model ?? sourceSession.model
+    if (!model) return
+
+    const messageID = Identifier.ascending("message")
+    const textPart = {
+      id: Identifier.ascending("part"),
+      type: "text" as const,
+      text: plan,
+    }
+    const requestParts = [textPart]
+    const optimisticParts = requestParts.map((part) => ({
+      ...part,
+      sessionID: createdSession.id,
+      messageID,
+    }))
+
+    sync.session.addOptimisticMessage({
+      sessionID: createdSession.id,
+      messageID,
+      parts: optimisticParts,
+      agent: "build",
+      model,
+    })
+
+    const variant = createdSession.variant ?? sourceSession.variant
+    const thinking = createdSession.thinking ?? sourceSession.thinking
+    const mode = sourceSession.mode ?? createdSession.mode
+
+    sdk.client.session
+      .prompt({
+        sessionID: createdSession.id,
+        agent: "build",
+        model,
+        messageID,
+        parts: requestParts,
+        variant,
+        thinking,
+        claudeCodeFlow: true,
+        mode,
+      })
+      .then((response) => {
+        const data = response.data
+        if (!data) return
+        sync.session.mergeMessage({ info: data.info, parts: data.parts ?? [] })
+      })
+      .catch((error) => {
+        console.error("Failed to send plan prompt", error)
+        showToast({
+          variant: "error",
+          title: "Failed to send plan",
+          description: "Please try again.",
+        })
+      })
+
+    sync.session.sync(createdSession.id).catch(() => {})
+    return { sessionID: createdSession.id }
   }
 }
 
@@ -164,6 +270,7 @@ function AgentBridge(props: { setAgentRef: (fn: (name: string) => void) => void;
 }
 
 function PaneProviders(props: { paneId: string; directory: string; children: any }) {
+  const multiPane = useMultiPane()
   const sync = useSync()
   const sdk = useSDK()
   const respondToPermission = (input: {
@@ -172,7 +279,10 @@ function PaneProviders(props: { paneId: string; directory: string; children: any
     response: "once" | "always" | "reject"
   }) => sdk.client.permission.respond(input)
   const respondToAskUser = createAskUserResponder(sync, sdk.url, props.directory)
-  const respondToPlanMode = createPlanModeResponder(sdk.url, props.directory)
+  const respondToPlanMode = createPlanModeResponder(sync, sdk, props.directory)
+  const navigateToSession = (sessionID: string) => {
+    multiPane.updatePane(props.paneId, { sessionId: sessionID })
+  }
 
   // Use a ref to capture the agent setter from inside LocalProvider
   let setAgentFn: ((name: string) => void) | undefined
@@ -184,6 +294,7 @@ function PaneProviders(props: { paneId: string; directory: string; children: any
       onPermissionRespond={respondToPermission}
       onAskUserRespond={respondToAskUser}
       onPlanModeRespond={respondToPlanMode}
+      onNavigateToSession={navigateToSession}
       onSetAgent={(name) => setAgentFn?.(name)}
       onReasoningPrefetch={(input) => sync.session.prefetchReasoning(input.sessionID, input.messageID)}
     >
