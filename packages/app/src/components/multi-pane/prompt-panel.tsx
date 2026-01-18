@@ -17,6 +17,7 @@ import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { Persist, persisted } from "@/utils/persist"
 import { paneCache } from "./pane-cache"
 import { makeViewKey } from "@/utils/layout-key"
+import { MessageQueueProvider } from "@/context/message-queue"
 
 const MAX_TERMINAL_HEIGHT = 200
 const MAX_SESSION_CACHE = 50
@@ -294,20 +295,21 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
   )
 
   return (
-    <div ref={(el) => (containerRef = el)} class="shrink-0 flex flex-col">
-      <div class="px-3 pt-2 flex justify-center">
-        <div class="w-full max-w-[800px]">
-          <PromptInput
-            ref={(el) => (editorRef = el)}
-            paneId={props.paneId}
-            sessionId={props.sessionId}
-            onSessionCreated={handleSessionCreated}
-            onSubmitted={() => clearPanePrompt(props.paneId)}
-          />
+    <MessageQueueProvider paneId={props.paneId}>
+      <div ref={(el) => (containerRef = el)} class="shrink-0 flex flex-col">
+        <div class="px-3 pt-2 flex justify-center">
+          <div class="w-full max-w-[800px]">
+            <PromptInput
+              ref={(el) => (editorRef = el)}
+              paneId={props.paneId}
+              sessionId={props.sessionId}
+              onSessionCreated={handleSessionCreated}
+              onSubmitted={() => clearPanePrompt(props.paneId)}
+            />
+          </div>
         </div>
-      </div>
 
-      <Show when={view().terminal.opened()}>
+        <Show when={view().terminal.opened()}>
         <div class="px-3 pt-2 pb-2 flex justify-center">
           <div
             class="relative w-full max-w-[800px] flex flex-col shrink-0 border border-border-base rounded-md overflow-hidden"
@@ -359,7 +361,8 @@ export function MultiPanePromptPanel(props: { paneId: string; sessionId?: string
             </Tabs>
           </div>
         </div>
-      </Show>
-    </div>
+        </Show>
+      </div>
+    </MessageQueueProvider>
   )
 }

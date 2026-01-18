@@ -62,6 +62,8 @@ import {
   type NestedOptionView,
   type NestedStackItem,
 } from "./prompt-input-slash"
+import { useMessageQueue } from "@/context/message-queue"
+import { QueuedMessages } from "@/components/queued-messages"
 
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"]
 const ACCEPTED_FILE_TYPES = [...ACCEPTED_IMAGE_TYPES, "application/pdf"]
@@ -137,6 +139,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const dialog = useDialog()
   const command = useCommand()
   const platform = usePlatform()
+  const messageQueue = useMessageQueue()
   const scrollBehavior = createMemo(() => useScrollBehavior(props.paneId))
   let editorRef!: HTMLDivElement
   let fileInputRef!: HTMLInputElement
@@ -1438,6 +1441,68 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       .catch(() => {})
   }
 
+  // Queue handlers
+  const handleQueueEdit = (message: import("@/context/message-queue").QueuedMessage) => {
+    messageQueue.remove(message.id)
+    prompt.set(message.prompt)
+    setStore("imageAttachments", message.imageAttachments)
+    editorRef.focus()
+  }
+
+  const handleQueueSendNow = (messageId: string) => {
+    const message = messageQueue.get(messageId)
+    if (!message) return
+    messageQueue.remove(messageId)
+    abort()
+    // Wait a moment for abort to process, then send
+    setTimeout(() => {
+      prompt.set(message.prompt)
+      setStore("imageAttachments", message.imageAttachments)
+      // Trigger form submit
+      const form = editorRef.closest("form")
+      if (form) {
+        form.requestSubmit()
+      }
+    }, 100)
+  }
+
+  const handleQueueDelete = (messageId: string) => {
+    messageQueue.remove(messageId)
+  }
+
+  // Auto-send queued messages when status becomes idle
+  let processingQueueRef = false
+  createEffect(
+    on(
+      () => status().type,
+      (statusType, prevStatusType) => {
+        if (!props.paneId) return
+        if (processingQueueRef) return
+        const wasWorking = prevStatusType !== "idle"
+        const nowIdle = statusType === "idle"
+        const queue = messageQueue.queue()
+
+        if (wasWorking && nowIdle && queue.length > 0) {
+          const next = messageQueue.shift()
+          if (next) {
+            processingQueueRef = true
+            // Restore prompt and submit
+            prompt.set(next.prompt)
+            setStore("imageAttachments", next.imageAttachments)
+            // Use setTimeout to let the state update propagate
+            setTimeout(() => {
+              const form = editorRef.closest("form")
+              if (form) {
+                form.requestSubmit()
+              }
+              processingQueueRef = false
+            }, 50)
+          }
+        }
+      },
+    ),
+  )
+
   const addToHistory = (prompt: Prompt, mode: "normal" | "shell") => {
     const text = prompt
       .map((p) => ("content" in p ? p.content : ""))
@@ -1840,6 +1905,25 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     const hasImageAttachments = store.imageAttachments.length > 0
     if (text.trim().length === 0 && !hasImageAttachments) {
       if (working()) abort()
+      return
+    }
+
+    // If agent is working, queue the message instead of sending
+    if (working() && props.paneId) {
+      messageQueue.add({
+        text: text.trim(),
+        prompt: clonePromptParts(currentPrompt),
+        imageAttachments: [...store.imageAttachments],
+        context: {
+          activeTab: prompt.context.activeTab(),
+          items: [...prompt.context.items()],
+        },
+        timestamp: Date.now(),
+      })
+      // Clear input
+      editorRef.innerHTML = ""
+      prompt.set([{ type: "text", content: "", start: 0, end: 0 }], 0)
+      setStore("imageAttachments", [])
       return
     }
 
@@ -2334,6 +2418,14 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
             </Match>
           </Switch>
         </div>
+      </Show>
+      <Show when={props.paneId && messageQueue.queue().length > 0 && !store.popover}>
+        <QueuedMessages
+          queue={messageQueue.queue()}
+          onEdit={handleQueueEdit}
+          onSendNow={handleQueueSendNow}
+          onDelete={handleQueueDelete}
+        />
       </Show>
       <form
         onSubmit={handleSubmit}
