@@ -1,8 +1,6 @@
-import { createMemo, createSignal, onCleanup, onMount, Show, type Accessor } from "solid-js"
+import { createMemo, createSignal, onCleanup, onMount, type Accessor } from "solid-js"
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
-import { Dialog } from "@opencode-ai/ui/dialog"
-import { List } from "@opencode-ai/ui/list"
 
 const IS_MAC = typeof navigator === "object" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 
@@ -75,14 +73,7 @@ export function parseKeybind(config: string): Keybind[] {
 }
 
 export function matchKeybind(keybinds: Keybind[], event: KeyboardEvent): boolean {
-  const rawKey = event.key.toLowerCase()
-  const normalized = rawKey === " " || rawKey === "spacebar" ? "space" : rawKey
-  const eventKey =
-    normalized === "dead" && event.code === "Backquote"
-      ? "`"
-      : normalized === "dead" && event.code === "Quote"
-        ? "'"
-        : normalized
+  const eventKey = event.key.toLowerCase()
 
   for (const kb of keybinds) {
     const keyMatch = kb.key === eventKey
@@ -114,79 +105,27 @@ export function formatKeybind(config: string): string {
   if (kb.meta) parts.push(IS_MAC ? "⌘" : "Meta")
 
   if (kb.key) {
+    const arrows: Record<string, string> = {
+      arrowup: "↑",
+      arrowdown: "↓",
+      arrowleft: "←",
+      arrowright: "→",
+    }
     const displayKey =
-      kb.key === "space"
-        ? "Space"
-        : kb.key.length === 1
-          ? kb.key.toUpperCase()
-          : kb.key.charAt(0).toUpperCase() + kb.key.slice(1)
+      arrows[kb.key.toLowerCase()] ??
+      (kb.key.length === 1 ? kb.key.toUpperCase() : kb.key.charAt(0).toUpperCase() + kb.key.slice(1))
     parts.push(displayKey)
   }
 
   return IS_MAC ? parts.join("") : parts.join("+")
 }
 
-function DialogCommand(props: { options: CommandOption[] }) {
-  const dialog = useDialog()
-  let cleanup: (() => void) | void
-  let committed = false
-
-  const handleMove = (option: CommandOption | undefined) => {
-    cleanup?.()
-    cleanup = option?.onHighlight?.()
-  }
-
-  const handleSelect = (option: CommandOption | undefined) => {
-    if (option) {
-      committed = true
-      cleanup = undefined
-      dialog.close()
-      option.onSelect?.("palette")
-    }
-  }
-
-  onCleanup(() => {
-    if (!committed) {
-      cleanup?.()
-    }
-  })
-
-  return (
-    <Dialog title="Commands">
-      <List
-        search={{ placeholder: "Search commands", autofocus: true }}
-        emptyMessage="No commands found"
-        items={() => props.options.filter((x) => !x.id.startsWith("suggested.") || !x.disabled)}
-        key={(x) => x?.id}
-        filterKeys={["title", "description", "category"]}
-        groupBy={(x) => x.category ?? ""}
-        onMove={handleMove}
-        onSelect={handleSelect}
-      >
-        {(option) => (
-          <div class="w-full flex items-center justify-between gap-4">
-            <div class="flex items-center gap-2 min-w-0">
-              <span class="text-14-regular text-text-strong whitespace-nowrap">{option.title}</span>
-              <Show when={option.description}>
-                <span class="text-14-regular text-text-weak truncate">{option.description}</span>
-              </Show>
-            </div>
-            <Show when={option.keybind}>
-              <span class="text-12-regular text-text-subtle shrink-0">{formatKeybind(option.keybind!)}</span>
-            </Show>
-          </div>
-        )}
-      </List>
-    </Dialog>
-  )
-}
-
 export const { use: useCommand, provider: CommandProvider } = createSimpleContext({
   name: "Command",
   init: () => {
+    const dialog = useDialog()
     const [registrations, setRegistrations] = createSignal<Accessor<CommandOption[]>[]>([])
     const [suspendCount, setSuspendCount] = createSignal(0)
-    const dialog = useDialog()
 
     const options = createMemo(() => {
       const seen = new Set<string>()
@@ -214,22 +153,26 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
 
     const suspended = () => suspendCount() > 0
 
-    const showPalette = () => {
-      if (!dialog.active) {
-        dialog.show(() => <DialogCommand options={options().filter((x) => !x.disabled)} />)
+    const run = (id: string, source?: "palette" | "keybind" | "slash") => {
+      for (const option of options()) {
+        if (option.id === id || option.id === "suggested." + id) {
+          option.onSelect?.(source)
+          return
+        }
       }
     }
 
+    const showPalette = () => {
+      run("file.open", "palette")
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (suspended()) return
-      const isRepeat = event.repeat
+      if (suspended() || dialog.active) return
 
       const paletteKeybinds = parseKeybind("mod+shift+p")
       if (matchKeybind(paletteKeybinds, event)) {
         event.preventDefault()
-        if (!isRepeat) {
-          showPalette()
-        }
+        showPalette()
         return
       }
 
@@ -240,9 +183,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
         const keybinds = parseKeybind(option.keybind)
         if (matchKeybind(keybinds, event)) {
           event.preventDefault()
-          if (!isRepeat) {
-            option.onSelect?.("keybind")
-          }
+          option.onSelect?.("keybind")
           return
         }
       }
@@ -265,12 +206,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
         })
       },
       trigger(id: string, source?: "palette" | "keybind" | "slash") {
-        for (const option of options()) {
-          if (option.id === id || option.id === "suggested." + id) {
-            option.onSelect?.(source)
-            return
-          }
-        }
+        run(id, source)
       },
       keybind(id: string) {
         const option = options().find((x) => x.id === id || x.id === "suggested." + id)

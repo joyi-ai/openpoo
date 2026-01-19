@@ -28,9 +28,8 @@ import { Suspense } from "solid-js"
 import { OnboardingProvider, Onboarding } from "@/components/onboarding"
 
 const Home = lazy(() => import("@/pages/home"))
-// Session is eagerly loaded to avoid flash on first session navigation
-import Session from "@/pages/session"
-const Loading = () => <div class="size-full flex items-center justify-center text-text-weak">Loading...</div>
+const Session = lazy(() => import("@/pages/session"))
+const Loading = () => <div class="size-full" />
 
 export { PlatformProvider, type Platform } from "@/context/platform"
 

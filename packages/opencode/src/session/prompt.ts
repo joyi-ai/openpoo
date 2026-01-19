@@ -2112,6 +2112,16 @@ export namespace SessionPrompt {
           ]
         : [...templateParts, ...(input.parts ?? [])]
 
+    await Plugin.trigger(
+      "command.execute.before",
+      {
+        command: input.command,
+        sessionID: input.sessionID,
+        arguments: input.arguments,
+      },
+      { parts },
+    )
+
     const result = (await prompt({
       sessionID: input.sessionID,
       messageID: input.messageID,

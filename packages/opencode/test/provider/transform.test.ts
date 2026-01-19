@@ -729,7 +729,7 @@ describe("ProviderTransform.variants", () => {
       expect(Object.keys(result)).toEqual(["none", "minimal", "low", "medium", "high", "xhigh"])
     })
 
-    test("grok-4 returns OPENAI_EFFORTS with reasoning", () => {
+    test("grok-4 returns empty object", () => {
       const model = createMockModel({
         id: "openrouter/grok-4",
         providerID: "openrouter",
@@ -740,7 +740,23 @@ describe("ProviderTransform.variants", () => {
         },
       })
       const result = ProviderTransform.variants(model)
-      expect(Object.keys(result)).toEqual(["none", "minimal", "low", "medium", "high", "xhigh"])
+      expect(result).toEqual({})
+    })
+
+    test("grok-3-mini returns low and high with reasoning", () => {
+      const model = createMockModel({
+        id: "openrouter/grok-3-mini",
+        providerID: "openrouter",
+        api: {
+          id: "grok-3-mini",
+          url: "https://openrouter.ai",
+          npm: "@openrouter/ai-sdk-provider",
+        },
+      })
+      const result = ProviderTransform.variants(model)
+      expect(Object.keys(result)).toEqual(["low", "high"])
+      expect(result.low).toEqual({ reasoning: { effort: "low" } })
+      expect(result.high).toEqual({ reasoning: { effort: "high" } })
     })
   })
 
@@ -799,7 +815,7 @@ describe("ProviderTransform.variants", () => {
   })
 
   describe("@ai-sdk/xai", () => {
-    test("returns WIDELY_SUPPORTED_EFFORTS with reasoningEffort", () => {
+    test("grok-3 returns empty object", () => {
       const model = createMockModel({
         id: "xai/grok-3",
         providerID: "xai",
@@ -810,7 +826,21 @@ describe("ProviderTransform.variants", () => {
         },
       })
       const result = ProviderTransform.variants(model)
-      expect(Object.keys(result)).toEqual(["low", "medium", "high"])
+      expect(result).toEqual({})
+    })
+
+    test("grok-3-mini returns low and high with reasoningEffort", () => {
+      const model = createMockModel({
+        id: "xai/grok-3-mini",
+        providerID: "xai",
+        api: {
+          id: "grok-3-mini",
+          url: "https://api.x.ai",
+          npm: "@ai-sdk/xai",
+        },
+      })
+      const result = ProviderTransform.variants(model)
+      expect(Object.keys(result)).toEqual(["low", "high"])
       expect(result.low).toEqual({ reasoningEffort: "low" })
       expect(result.high).toEqual({ reasoningEffort: "high" })
     })
