@@ -1,16 +1,10 @@
-import { Show, createMemo, createResource, createSignal, type Component } from "solid-js"
+import { Show, createMemo, createSignal, type Component } from "solid-js"
 import { List } from "@opencode-ai/ui/list"
 import { Switch } from "@opencode-ai/ui/switch"
 import { showToast } from "@opencode-ai/ui/toast"
 import { useSDK } from "@/context/sdk"
-import { useSync } from "@/context/sync"
+import { useSync, type SkillInfo } from "@/context/sync"
 import type { PermissionActionConfig, PermissionObjectConfig, PermissionRuleConfig, PermissionConfig } from "@opencode-ai/sdk/v2/client"
-
-type SkillInfo = {
-  name: string
-  description: string
-  location: string
-}
 
 type PermissionRule = PermissionRuleConfig
 
@@ -46,14 +40,8 @@ export const SkillsPanel: Component = () => {
   const sync = useSync()
   const [saving, setSaving] = createSignal<string | null>(null)
 
-  const [skills, { refetch }] = createResource(async () => {
-    try {
-      const response = await sdk.client.skill.list()
-      return (response.data ?? []) as SkillInfo[]
-    } catch {
-      return []
-    }
-  })
+  // Read pre-fetched skills from sync data (fetched during app bootstrap)
+  const skills = () => sync.data.skill
 
   const permission = createMemo<Record<string, PermissionRule>>(() => {
     const current = sync.data.config.permission
@@ -113,7 +101,6 @@ export const SkillsPanel: Component = () => {
         title: nextEnabled ? "Skill enabled" : "Skill disabled",
         description: name,
       })
-      void refetch()
     }
     setSaving(null)
   }

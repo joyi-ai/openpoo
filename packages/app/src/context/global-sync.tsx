@@ -74,6 +74,25 @@ const mapQuestionRequest = (request: QuestionRequest): AskUserQuestionRequest =>
   }
 }
 
+export type SkillInfo = {
+  name: string
+  description: string
+  location: string
+}
+
+export type ClaudePluginInfo = {
+  id: string
+  path: string
+  enabled: boolean
+  manifest: {
+    name: string
+    version: string
+    description?: string
+    author?: { name: string; email?: string } | string
+  }
+  installedAt: number
+}
+
 type State = {
   status: "loading" | "partial" | "complete"
   agent: Agent[]
@@ -114,6 +133,8 @@ type State = {
   part: {
     [messageID: string]: Part[]
   }
+  skill: SkillInfo[]
+  claude_plugin: ClaudePluginInfo[]
 }
 
 function createGlobalSync() {
@@ -187,6 +208,8 @@ function createGlobalSync() {
           limit: 5,
           message: {},
           part: {},
+          skill: [],
+          claude_plugin: [],
         }),
       )
       childDirectories.set(key, directory)
@@ -359,6 +382,16 @@ function createGlobalSync() {
       sdk.mcp.status().then((x) => setStore("mcp", x.data!)),
       sdk.lsp.status().then((x) => setStore("lsp", x.data!)),
       sdk.vcs.get().then((x) => setStore("vcs", x.data)),
+      sdk.skill.list().then((x) => setStore("skill", (x.data ?? []) as SkillInfo[])),
+      (async () => {
+        const url = new URL("/claude-plugin/installed", globalSDK.url)
+        url.searchParams.set("directory", resolvedDirectory)
+        const fetcher = platform.fetch ?? fetch
+        const response = await fetcher(url.toString()).catch(() => undefined)
+        if (!response || !response.ok) return
+        const data = await response.json().catch(() => [])
+        if (Array.isArray(data)) setStore("claude_plugin", data as ClaudePluginInfo[])
+      })(),
       sdk.permission.list().then((x) => {
         const grouped: Record<string, PermissionRequest[]> = {}
         for (const perm of x.data ?? []) {

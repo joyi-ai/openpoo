@@ -4,7 +4,6 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { SDKProvider } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
-import { LocalProvider } from "@/context/local"
 import { useMultiPane } from "@/context/multi-pane"
 import { McpSettingsPanel } from "@/components/dialog-select-mcp"
 
@@ -51,9 +50,7 @@ export function McpPopover(props: ParentProps) {
       {(directory) => (
         <SDKProvider directory={directory()}>
           <SyncProvider>
-            <LocalProvider>
-              <McpPopoverInner>{props.children}</McpPopoverInner>
-            </LocalProvider>
+            <McpPopoverInner>{props.children}</McpPopoverInner>
           </SyncProvider>
         </SDKProvider>
       )}

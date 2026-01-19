@@ -4,7 +4,6 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { SDKProvider } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
-import { LocalProvider } from "@/context/local"
 import { useMultiPane } from "@/context/multi-pane"
 import { ClaudePluginsPanel } from "@/components/settings/claude-plugins-panel"
 import { OpenCodePluginsPanel } from "@/components/settings/opencode-plugins-panel"
@@ -83,9 +82,7 @@ export function PluginsPopover(props: ParentProps) {
       {(directory) => (
         <SDKProvider directory={directory()}>
           <SyncProvider>
-            <LocalProvider>
-              <PluginsPopoverInner>{props.children}</PluginsPopoverInner>
-            </LocalProvider>
+            <PluginsPopoverInner>{props.children}</PluginsPopoverInner>
           </SyncProvider>
         </SDKProvider>
       )}

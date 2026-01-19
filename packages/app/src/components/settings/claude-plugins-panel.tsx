@@ -1,20 +1,8 @@
-import { Show, createMemo, createResource, createSignal, type Component } from "solid-js"
+import { Show, createMemo, createSignal, type Component } from "solid-js"
 import { List } from "@opencode-ai/ui/list"
 import { Switch } from "@opencode-ai/ui/switch"
 import { useSDK } from "@/context/sdk"
-
-interface InstalledPlugin {
-  id: string
-  path: string
-  enabled: boolean
-  manifest: {
-    name: string
-    version: string
-    description?: string
-    author?: { name: string; email?: string } | string
-  }
-  installedAt: number
-}
+import { useSync, type ClaudePluginInfo } from "@/context/sync"
 
 export type ClaudePluginsPanelProps = {
   variant?: "dialog" | "page"
@@ -22,6 +10,7 @@ export type ClaudePluginsPanelProps = {
 
 export const ClaudePluginsPanel: Component<ClaudePluginsPanelProps> = () => {
   const sdk = useSDK()
+  const sync = useSync()
   const [loading, setLoading] = createSignal<string | null>(null)
 
   const buildUrl = (path: string) => {
@@ -30,13 +19,21 @@ export const ClaudePluginsPanel: Component<ClaudePluginsPanelProps> = () => {
     return url.toString()
   }
 
-  const [installed, { refetch: refetchInstalled }] = createResource(async () => {
-    const response = await fetch(buildUrl("/claude-plugin/installed")).catch(() => undefined)
-    if (!response || !response.ok) return []
-    const data = await response.json().catch(() => [])
-    if (Array.isArray(data)) return data as InstalledPlugin[]
-    return []
-  })
+  // Read pre-fetched plugins from sync data (fetched during app bootstrap)
+  const installed = () => sync.data.claude_plugin
+
+  // Refetch after toggle to get updated enabled state
+  const refetchPlugins = () => {
+    fetch(buildUrl("/claude-plugin/installed"))
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to fetch")
+        return response.json()
+      })
+      .then((data) => {
+        if (Array.isArray(data)) sync.set("claude_plugin", data as ClaudePluginInfo[])
+      })
+      .catch(() => {})
+  }
 
   const items = createMemo(() =>
     (installed() ?? [])
@@ -57,7 +54,7 @@ export const ClaudePluginsPanel: Component<ClaudePluginsPanelProps> = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       })
-      await refetchInstalled()
+      refetchPlugins()
     } finally {
       setLoading(null)
     }
