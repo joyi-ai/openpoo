@@ -1838,12 +1838,10 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         .map((part) => ("content" in part ? part.content : ""))
         .join("")
       const isEmpty = textContent.trim() === "" || textLength <= 1
-      const hasNewlines = textContent.includes("\n")
-      const inHistory = store.historyIndex >= 0
       const atStart = cursorPosition <= (isEmpty ? 1 : 0)
       const atEnd = cursorPosition >= (isEmpty ? textLength - 1 : textLength)
-      const allowUp = isEmpty || atStart || (!hasNewlines && !inHistory)
-      const allowDown = isEmpty || atEnd || (!hasNewlines && !inHistory)
+      const allowUp = isEmpty || atStart
+      const allowDown = isEmpty || atEnd
 
       if (event.key === "ArrowUp") {
         if (!allowUp) return
