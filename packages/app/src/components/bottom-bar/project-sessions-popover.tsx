@@ -173,14 +173,14 @@ function SessionItem(props: { session: Session; directory: string; onArchive?: (
                 <div class="size-1.5 mr-1.5 rounded-full bg-text-interactive-base" />
               </Show>
               <Show when={!isWorking() && !hasPermissions() && !hasError() && notifications().length === 0}>
-                <div class="relative flex items-center justify-end min-w-5">
+                <div class="relative flex items-center justify-end min-w-5 h-5">
                   <span class="text-11-regular text-text-weak text-right whitespace-nowrap group-hover/session:opacity-0">{relative()}</span>
                   <Show when={props.archived}>
                     <Tooltip placement="top" value="Unarchive session">
                       <button
                         type="button"
                         onClick={unarchiveSession}
-                        class="absolute right-0 opacity-0 group-hover/session:opacity-100 flex items-center justify-center size-5 rounded hover:bg-surface-raised-base-active"
+                        class="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/session:opacity-100 flex items-center justify-center size-5 rounded hover:bg-surface-raised-base-active"
                         disabled={archiving()}
                       >
                         <Show when={archiving()} fallback={<Icon name="revert" size="small" class="text-icon-base" />}>
@@ -194,7 +194,7 @@ function SessionItem(props: { session: Session; directory: string; onArchive?: (
                       <button
                         type="button"
                         onClick={archiveSession}
-                        class="absolute right-0 opacity-0 group-hover/session:opacity-100 flex items-center justify-center size-5 rounded hover:bg-surface-raised-base-active"
+                        class="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/session:opacity-100 flex items-center justify-center size-5 rounded hover:bg-surface-raised-base-active"
                         disabled={archiving()}
                       >
                         <Show when={archiving()} fallback={<Icon name="archive" size="small" class="text-icon-base" />}>
