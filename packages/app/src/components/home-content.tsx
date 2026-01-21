@@ -290,17 +290,7 @@ export function HomeContent(props: HomeContentProps) {
     return worktreeLabel(current)
   }
 
-  const isManagedWorktree = (path: string) => {
-    const project = worktreeProject()
-    if (!project || !("id" in project)) return false
-    const normalized = normalizeDirectoryKey(path).toLowerCase()
-    const projectId = project.id.toLowerCase()
-    const pattern = new RegExp(`/opencode/worktree/${projectId}/[^/]+/?$`)
-    return pattern.test(normalized)
-  }
-
   async function handleDeleteWorktree(path: string) {
-    if (!isManagedWorktree(path)) return
     const key = normalizeDirectoryKey(path)
     // Add to deleting set
     setDeletingWorktrees((prev) => new Set([...prev, path]))
@@ -360,7 +350,7 @@ export function HomeContent(props: HomeContentProps) {
                 >
                   <span class="truncate">{label}</span>
                 </Button>
-                <Show when={option.kind === "worktree" && isManagedWorktree(option.path) ? option : undefined}>
+                <Show when={option.kind === "worktree" ? option : undefined}>
                   {(worktree) => {
                     const isDeleting = () => deletingWorktrees().has(worktree().path)
                     return (
