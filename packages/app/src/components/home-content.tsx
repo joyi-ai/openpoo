@@ -125,7 +125,11 @@ export function HomeContent(props: HomeContentProps) {
     if (!directory) return undefined
     return globalSDK.client.project
       .current({ directory })
-      .then((result) => result.data)
+      .then((result) => {
+        // Add the fetched project to the global cache so we don't need to fetch again
+        if (result.data) sync.project.addToCache(result.data)
+        return result.data
+      })
       .catch(() => undefined)
   })
 

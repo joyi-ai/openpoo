@@ -870,6 +870,26 @@ function createGlobalSync() {
     bootstrap()
   })
 
+  // Add a project to the global project list if it doesn't exist (by worktree, not ID)
+  // Note: Multiple projects can have the same ID if they're git clones of the same repo
+  function addProjectToCache(project: Project) {
+    if (!project?.id || !project?.worktree) return
+    // Check by normalized worktree, not ID (IDs can be shared across clones)
+    const normalizedWorktree = normalizeDirectoryKey(project.worktree)
+    const exists = globalStore.project.some(
+      (p) => normalizeDirectoryKey(p.worktree) === normalizedWorktree
+    )
+    if (exists) return
+    // Find the correct insertion point to keep the list sorted by ID
+    const result = Binary.search(globalStore.project, project.id, (p) => p.id)
+    setGlobalStore(
+      "project",
+      produce((draft) => {
+        draft.splice(result.index, 0, project)
+      }),
+    )
+  }
+
   return {
     data: globalStore,
     get ready() {
@@ -883,6 +903,7 @@ function createGlobalSync() {
     refreshProviders,
     project: {
       loadSessions,
+      addToCache: addProjectToCache,
     },
   }
 }
