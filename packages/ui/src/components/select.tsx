@@ -1,5 +1,5 @@
 import { Select as Kobalte } from "@kobalte/core/select"
-import { createMemo, Show, splitProps, type ComponentProps, type JSX } from "solid-js"
+import { createMemo, onCleanup, Show, splitProps, type ComponentProps, type JSX } from "solid-js"
 import { pipe, groupBy, entries, map } from "remeda"
 import { Button, ButtonProps } from "./button"
 import { Icon } from "./icon"
@@ -13,12 +13,16 @@ export type SelectProps<T> = Omit<ComponentProps<typeof Kobalte<T>>, "value" | "
   triggerLabel?: (x: T) => string
   groupBy?: (x: T) => string
   onSelect?: (value: T | undefined) => void
+  onHighlight?: (value: T | undefined) => (() => void) | void
   allowDuplicateSelectionEvents?: boolean
   class?: ComponentProps<"div">["class"]
   classList?: ComponentProps<"div">["classList"]
   itemRenderer?: (item: T | undefined) => JSX.Element
+  children?: (item: T | undefined) => JSX.Element
   icon?: ComponentProps<typeof Icon>["name"]
   hideIndicator?: boolean
+  triggerStyle?: JSX.CSSProperties
+  triggerVariant?: "settings"
 }
 
 export function Select<T>(props: SelectProps<T> & ButtonProps) {
@@ -33,12 +37,45 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
     "triggerLabel",
     "groupBy",
     "onSelect",
+    "onHighlight",
+    "onOpenChange",
     "allowDuplicateSelectionEvents",
     "itemRenderer",
+    "children",
     "icon",
     "hideIndicator",
+    "triggerStyle",
+    "triggerVariant",
   ])
   const allowDuplicateSelectionEvents = local.allowDuplicateSelectionEvents ?? true
+  const state = {
+    key: undefined as string | undefined,
+    cleanup: undefined as (() => void) | void,
+  }
+
+  const stop = () => {
+    state.cleanup?.()
+    state.cleanup = undefined
+    state.key = undefined
+  }
+
+  const keyFor = (item: T) => (local.value ? local.value(item) : (item as string))
+
+  const move = (item: T | undefined) => {
+    if (!local.onHighlight) return
+    if (!item) {
+      stop()
+      return
+    }
+
+    const key = keyFor(item)
+    if (state.key === key) return
+    state.cleanup?.()
+    state.cleanup = local.onHighlight(item)
+    state.key = key
+  }
+
+  onCleanup(stop)
   const grouped = createMemo(() => {
     const result = pipe(
       local.options,
@@ -55,7 +92,9 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
     <Kobalte<T, { category: string; options: T[] }>
       {...others}
       data-component="select"
-      placement="bottom-start"
+      data-trigger-style={local.triggerVariant}
+      placement={local.triggerVariant === "settings" ? "bottom-end" : "bottom-start"}
+      gutter={4}
       value={local.current}
       options={grouped()}
       optionValue={(x) => (local.value ? local.value(x) : (x as string))}
@@ -73,13 +112,17 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
             [local.class ?? ""]: !!local.class,
           }}
           {...itemProps}
+          onPointerEnter={() => move(itemProps.item.rawValue)}
+          onPointerMove={() => move(itemProps.item.rawValue)}
         >
           <Kobalte.ItemLabel data-slot="select-select-item-label" data-full-width={local.hideIndicator || undefined}>
             {local.itemRenderer
               ? local.itemRenderer(itemProps.item.rawValue)
-              : local.label
-                ? local.label(itemProps.item.rawValue)
-                : (itemProps.item.rawValue as string)}
+              : local.children
+                ? local.children(itemProps.item.rawValue)
+                : local.label
+                  ? local.label(itemProps.item.rawValue)
+                  : (itemProps.item.rawValue as string)}
           </Kobalte.ItemLabel>
           <Show when={!local.hideIndicator}>
             <Kobalte.ItemIndicator data-slot="select-select-item-indicator">
@@ -90,14 +133,22 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
       )}
       onChange={(v) => {
         const next = v ?? undefined
+        let isDuplicate = false
         if (!allowDuplicateSelectionEvents) {
           const getValue = (item: T | undefined) => {
             if (!item) return undefined
             return local.value ? local.value(item) : (item as string)
           }
-          if (getValue(next) === getValue(local.current)) return
+          isDuplicate = getValue(next) === getValue(local.current)
         }
-        local.onSelect?.(next)
+        if (!isDuplicate) {
+          local.onSelect?.(next)
+        }
+        stop()
+      }}
+      onOpenChange={(open) => {
+        local.onOpenChange?.(open)
+        if (!open) stop()
       }}
     >
       <Kobalte.Trigger
@@ -106,6 +157,7 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
         as={Button}
         size={props.size}
         variant={props.variant}
+        style={local.triggerStyle}
         classList={{
           ...(local.classList ?? {}),
           [local.class ?? ""]: !!local.class,
@@ -122,7 +174,7 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
           }}
         </Kobalte.Value>
         <Kobalte.Icon data-slot="select-select-trigger-icon">
-          <Icon name="chevron-down" size="small" />
+          <Icon name={local.triggerVariant === "settings" ? "selector" : "chevron-down"} size="small" />
         </Kobalte.Icon>
       </Kobalte.Trigger>
       <Kobalte.Portal>
@@ -132,6 +184,7 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
             [local.class ?? ""]: !!local.class,
           }}
           data-component="select-content"
+          data-trigger-style={local.triggerVariant}
         >
           <Kobalte.Listbox data-slot="select-select-content-list" />
         </Kobalte.Content>

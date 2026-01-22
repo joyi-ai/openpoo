@@ -15,6 +15,7 @@ import { iife } from "@opencode-ai/util/iife"
 import { createMemo, createResource, For, Match, onCleanup, onMount, Show, Switch } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { Link } from "@/components/link"
+import { useLanguage } from "@/context/language"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { usePlatform } from "@/context/platform"
@@ -35,6 +36,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
   const globalSync = useGlobalSync()
   const globalSDK = useGlobalSDK()
   const platform = usePlatform()
+  const language = useLanguage()
   const providers = useProviders()
   const provider = createMemo(() => globalSync.data.provider.all.find((x) => x.id === props.provider)!)
   const iconId = createMemo(() => (props.provider === "codex" ? "openai" : props.provider))
@@ -58,7 +60,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
       globalSync.data.provider_auth[props.provider] ?? [
         {
           type: "api",
-          label: "API key",
+          label: language.t("provider.connect.method.apiKey"),
         },
       ],
   )
@@ -82,6 +84,12 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
   })
 
   const method = createMemo(() => (store.methodIndex !== undefined ? methods().at(store.methodIndex!) : undefined))
+
+  const methodLabel = (value?: { type?: string; label?: string }) => {
+    if (!value) return ""
+    if (value.type === "api") return language.t("provider.connect.method.apiKey")
+    return value.label ?? ""
+  }
 
   async function selectMethod(index: number) {
     const method = methods()[index]
@@ -163,8 +171,8 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
     showToast({
       variant: "success",
       icon: "circle-check",
-      title: `${provider().name} connected`,
-      description: `${provider().name} models are now available to use.`,
+      title: language.t("provider.connect.toast.connected.title", { provider: provider().name }),
+      description: language.t("provider.connect.toast.connected.description", { provider: provider().name }),
     })
   }
 
@@ -188,23 +196,35 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
   }
 
   return (
-    <Dialog title={<IconButton tabIndex={-1} icon="arrow-left" variant="ghost" onClick={goBack} />}>
+    <Dialog
+      title={
+        <IconButton
+          tabIndex={-1}
+          icon="arrow-left"
+          variant="ghost"
+          onClick={goBack}
+          aria-label={language.t("common.goBack")}
+        />
+      }
+    >
       <div class="flex flex-col gap-6 px-2.5 pb-3">
         <div class="px-2.5 flex gap-4 items-center">
           <ProviderIcon id={iconId() as IconName} class="size-5 shrink-0 icon-strong-base" />
           <div class="text-16-medium text-text-strong">
             <Switch>
               <Match when={props.provider === "anthropic" && method()?.label?.toLowerCase().includes("max")}>
-                Login with Claude Pro/Max
+                {language.t("provider.connect.title.anthropicProMax")}
               </Match>
-              <Match when={true}>Connect {provider().name}</Match>
+              <Match when={true}>{language.t("provider.connect.title", { provider: provider().name })}</Match>
             </Switch>
           </div>
         </div>
         <div class="px-2.5 pb-10 flex flex-col gap-6">
           <Switch>
             <Match when={store.methodIndex === undefined}>
-              <div class="text-14-regular text-text-base">Select login method for {provider().name}.</div>
+              <div class="text-14-regular text-text-base">
+                {language.t("provider.connect.selectMethod", { provider: provider().name })}
+              </div>
               <div class="">
                 <List
                   ref={(ref) => {
@@ -222,7 +242,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                       <div class="w-4 h-2 rounded-[1px] bg-input-base shadow-xs-border-base flex items-center justify-center">
                         <div class="w-2.5 h-0.5 bg-icon-strong-base hidden" data-slot="list-item-extra-icon" />
                       </div>
-                      <span>{i.label}</span>
+                      <span>{methodLabel(i)}</span>
                     </div>
                   )}
                 </List>
@@ -232,7 +252,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
               <div class="text-14-regular text-text-base">
                 <div class="flex items-center gap-x-2">
                   <Spinner />
-                  <span>Authorization in progress...</span>
+                  <span>{language.t("provider.connect.status.inProgress")}</span>
                 </div>
               </div>
             </Match>
@@ -240,7 +260,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
               <div class="text-14-regular text-text-base">
                 <div class="flex items-center gap-x-2">
                   <Icon name="circle-ban-sign" class="text-icon-critical-base" />
-                  <span>Authorization failed: {store.error}</span>
+                  <span>{language.t("provider.connect.status.failed", { error: store.error ?? "" })}</span>
                 </div>
               </div>
             </Match>
@@ -261,7 +281,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                   const apiKey = formData.get("apiKey") as string
 
                   if (!apiKey?.trim()) {
-                    setFormStore("error", "API key is required")
+                    setFormStore("error", language.t("provider.connect.apiKey.required"))
                     return
                   }
 
@@ -282,18 +302,17 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                       <Match when={provider().id === "opencode"}>
                         <div class="flex flex-col gap-4">
                           <div class="text-14-regular text-text-base">
-                            OpenCode Zen gives you access to a curated set of reliable optimized models for coding
-                            agents.
+                            {language.t("provider.connect.opencodeZen.line1")}
                           </div>
                           <div class="text-14-regular text-text-base">
-                            With a single API key you'll get access to models such as Claude, GPT, Gemini, GLM and more.
+                            {language.t("provider.connect.opencodeZen.line2")}
                           </div>
                           <div class="text-14-regular text-text-base">
-                            Visit{" "}
+                            {language.t("provider.connect.opencodeZen.visit.prefix")}
                             <Link href="https://opencode.ai/zen" tabIndex={-1}>
-                              opencode.ai/zen
-                            </Link>{" "}
-                            to collect your API key.
+                              {language.t("provider.connect.opencodeZen.visit.link")}
+                            </Link>
+                            {language.t("provider.connect.opencodeZen.visit.suffix")}
                           </div>
                         </div>
                       </Match>
@@ -305,8 +324,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                       </Match>
                       <Match when={true}>
                         <div class="text-14-regular text-text-base">
-                          Enter your {provider().name} API key to connect your account and use {provider().name} models
-                          in OpenCode.
+                          {language.t("provider.connect.apiKey.description", { provider: provider().name })}
                         </div>
                       </Match>
                     </Switch>
@@ -315,8 +333,12 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                         <TextField
                           autofocus={!hasExistingKey()}
                           type="text"
-                          label={`${provider().name} API key`}
-                          placeholder={hasExistingKey() ? "Enter new API key to replace" : "API key"}
+                          label={language.t("provider.connect.apiKey.label", { provider: provider().name })}
+                          placeholder={
+                            hasExistingKey()
+                              ? "Enter new API key to replace"
+                              : language.t("provider.connect.apiKey.placeholder")
+                          }
                           name="apiKey"
                           value={formStore.value}
                           onChange={(v) => setFormStore("value", v)}
@@ -333,7 +355,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                           variant="primary"
                           disabled={!!(hasExistingKey() && !formStore.value)}
                         >
-                          {hasExistingKey() ? "Update" : "Submit"}
+                          {hasExistingKey() ? language.t("common.save") : language.t("common.submit")}
                         </Button>
                         <Show when={hasExistingKey() && !formStore.value}>
                           <Button
@@ -559,7 +581,8 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                     })
 
                     function extractErrorMessage(error: unknown): string {
-                      if (!error || typeof error !== "object") return "Invalid authorization code"
+                      if (!error || typeof error !== "object")
+                        return language.t("provider.connect.oauth.code.invalid")
                       const err = error as Record<string, unknown>
 
                       // Handle BadRequestError format: { data: unknown, errors: Array<{...}>, success: false }
@@ -572,7 +595,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                             return "Authorization session expired. Please start the login process again."
                           }
                           if (name === "ProviderAuthOauthCodeMissing") {
-                            return "Authorization code is required"
+                            return language.t("provider.connect.oauth.code.required")
                           }
                           if (name === "ProviderAuthOauthCallbackFailed") {
                             return "Authorization failed. Please check the code and try again."
@@ -592,13 +615,13 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                           return "Authorization session expired. Please start the login process again."
                         }
                         if (name === "ProviderAuthOauthCodeMissing") {
-                          return "Authorization code is required"
+                          return language.t("provider.connect.oauth.code.required")
                         }
                         if (name === "ProviderAuthOauthCallbackFailed") {
                           return "Authorization failed. Please check the code and try again."
                         }
                         if (error.message) return error.message
-                        return "Invalid authorization code"
+                        return language.t("provider.connect.oauth.code.invalid")
                       }
 
                       // Handle NamedError format: { name: string, data: object }
@@ -607,7 +630,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                           return "Authorization session expired. Please start the login process again."
                         }
                         if (err.name === "ProviderAuthOauthCodeMissing") {
-                          return "Authorization code is required"
+                          return language.t("provider.connect.oauth.code.required")
                         }
                         if (err.name === "ProviderAuthOauthCallbackFailed") {
                           return "Authorization failed. Please check the code and try again."
@@ -620,7 +643,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                         return err.message
                       }
 
-                      return "Invalid authorization code"
+                      return language.t("provider.connect.oauth.code.invalid")
                     }
 
                     function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -639,7 +662,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                       const code = normalizeOauthCode(String(formData.get("code") ?? ""))
 
                       if (!code) {
-                        setFormStore("error", "Authorization code is required")
+                        setFormStore("error", language.t("provider.connect.oauth.code.required"))
                         return
                       }
 
@@ -681,8 +704,9 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                     return (
                       <div class="flex flex-col gap-6">
                         <div class="text-14-regular text-text-base">
-                          Visit <Link href={store.authorization!.url}>this link</Link> to collect your authorization
-                          code to connect your account and use {provider().name} models in OpenCode.
+                          {language.t("provider.connect.oauth.code.visit.prefix")}
+                          <Link href={store.authorization!.url}>{language.t("provider.connect.oauth.code.visit.link")}</Link>
+                          {language.t("provider.connect.oauth.code.visit.suffix", { provider: provider().name })}
                         </div>
                         <Show when={props.provider === "codex" && store.authorization?.url}>
                           <TextField label="Login link" value={store.authorization!.url} readOnly copyable />
@@ -691,8 +715,8 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                           <TextField
                             autofocus
                             type="text"
-                            label={`${method()?.label} authorization code`}
-                            placeholder="Authorization code"
+                            label={language.t("provider.connect.oauth.code.label", { method: method()?.label ?? "" })}
+                            placeholder={language.t("provider.connect.oauth.code.placeholder")}
                             name="code"
                             value={formStore.value}
                             onChange={setFormStore.bind(null, "value")}
@@ -707,7 +731,7 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                             variant="primary"
                             disabled={formStore.submitting}
                           >
-                            <Show when={formStore.submitting} fallback="Submit">
+                            <Show when={formStore.submitting} fallback={language.t("common.submit")}>
                               <div class="flex items-center gap-2">
                                 <Spinner />
                                 <span>Connecting...</span>
@@ -730,7 +754,9 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                     })
                     const showCode = createMemo(() => props.provider !== "codex" && !!code())
                     const waitingLabel = createMemo(() =>
-                      props.provider === "codex" ? "Waiting for ChatGPT login..." : "Waiting for authorization...",
+                      props.provider === "codex"
+                        ? "Waiting for ChatGPT login..."
+                        : language.t("provider.connect.status.waiting"),
                     )
 
                     onMount(async () => {
@@ -755,8 +781,11 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                               return here to finish connecting.
                             </Match>
                             <Match when={true}>
-                              Visit <Link href={store.authorization!.url}>this link</Link> and enter the code below to
-                              connect your account and use {provider().name} models in OpenCode.
+                              {language.t("provider.connect.oauth.auto.visit.prefix")}
+                              <Link href={store.authorization!.url}>
+                                {language.t("provider.connect.oauth.auto.visit.link")}
+                              </Link>
+                              {language.t("provider.connect.oauth.auto.visit.suffix", { provider: provider().name })}
                             </Match>
                           </Switch>
                         </div>
@@ -764,7 +793,13 @@ export function DialogConnectProvider(props: { provider: string; onBack?: () => 
                           <TextField label="Login link" value={store.authorization!.url} readOnly copyable />
                         </Show>
                         <Show when={showCode()}>
-                          <TextField label="Confirmation code" class="font-mono" value={code()} readOnly copyable />
+                          <TextField
+                            label={language.t("provider.connect.oauth.auto.confirmationCode")}
+                            class="font-mono"
+                            value={code()}
+                            readOnly
+                            copyable
+                          />
                         </Show>
                         <div class="text-14-regular text-text-base flex items-center gap-4">
                           <Spinner />

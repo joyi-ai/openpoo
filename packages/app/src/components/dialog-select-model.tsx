@@ -9,9 +9,12 @@ import { Tag } from "@opencode-ai/ui/tag"
 import { Dialog } from "@opencode-ai/ui/dialog"
 import { List } from "@opencode-ai/ui/list"
 import { Switch } from "@opencode-ai/ui/switch"
+import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { DialogSelectProvider } from "./dialog-select-provider"
 import { DialogManageModels } from "./dialog-manage-models"
 import { DialogConnectProvider } from "./dialog-connect-provider"
+import { ModelTooltip } from "./model-tooltip"
+import { useLanguage } from "@/context/language"
 
 const ModelList: Component<{
   provider?: string
@@ -21,6 +24,7 @@ const ModelList: Component<{
   showFavorites?: boolean
 }> = (props) => {
   const local = useLocal()
+  const language = useLanguage()
   const isClaudeCodeMode = createMemo(() => local.mode.current()?.id === "claude-code")
   const isCodexMode = createMemo(() => local.mode.current()?.id === "codex")
   const [hoveredModel, setHoveredModel] = createSignal<string | null>(null)
@@ -98,8 +102,10 @@ const ModelList: Component<{
   return (
     <List
       class={`flex-1 min-h-0 [&_[data-slot=list-scroll]]:flex-1 [&_[data-slot=list-scroll]]:min-h-0 ${props.class ?? ""}`}
-      search={shouldShowSearch() ? { placeholder: "Search models", autofocus: true } : undefined}
-      emptyMessage="No model results"
+      search={
+        shouldShowSearch() ? { placeholder: language.t("dialog.model.search.placeholder"), autofocus: true } : undefined
+      }
+      emptyMessage={language.t("dialog.model.empty")}
       key={(x) => `${x.provider.id}:${x.id}`}
       items={props.showFavorites ? sortedModels : models}
       current={local.model.current()}
@@ -119,6 +125,22 @@ const ModelList: Component<{
               return popularProviders.indexOf(aProvider) - popularProviders.indexOf(bProvider)
             }
       }
+      itemWrapper={(item, node) => (
+        <Tooltip
+          class="w-full"
+          placement="right-start"
+          gutter={12}
+          value={
+            <ModelTooltip
+              model={item}
+              latest={item.latest}
+              free={item.provider.id === "opencode" && (!item.cost || item.cost.input === 0)}
+            />
+          }
+        >
+          {node}
+        </Tooltip>
+      )}
       onSelect={(x) => {
         local.model.set(x ? { modelID: x.id, providerID: x.provider.id } : undefined, {
           recent: true,
@@ -167,10 +189,10 @@ const ModelList: Component<{
               <span class="text-11-regular text-text-weak truncate">{i.provider.name}</span>
             </Show>
             <Show when={i.provider.id === "opencode" && (!i.cost || i.cost?.input === 0)}>
-              <Tag>Free</Tag>
+              <Tag>{language.t("model.tag.free")}</Tag>
             </Show>
             <Show when={i.latest}>
-              <Tag>Latest</Tag>
+              <Tag>{language.t("model.tag.latest")}</Tag>
             </Show>
           </div>
         )
@@ -186,13 +208,14 @@ export const ModelSelectorPopover: Component<{
   const [open, setOpen] = createSignal(false)
   const local = useLocal()
   const isClaudeCodeMode = createMemo(() => local.mode.current()?.id === "claude-code")
+  const language = useLanguage()
 
   return (
     <Kobalte open={open()} onOpenChange={setOpen} placement="top-start" gutter={8}>
       <Kobalte.Trigger as="div">{props.children}</Kobalte.Trigger>
       <Kobalte.Portal>
         <Kobalte.Content class="w-72 h-80 flex flex-col rounded-md border border-border-base bg-surface-raised-stronger-non-alpha shadow-md z-50 outline-none overflow-hidden">
-          <Kobalte.Title class="sr-only">Select model</Kobalte.Title>
+          <Kobalte.Title class="sr-only">{language.t("dialog.model.select.title")}</Kobalte.Title>
           <div class="h-72 flex flex-col">
             <ModelList provider={props.provider} onSelect={() => setOpen(false)} class="p-1" />
           </div>
@@ -217,6 +240,7 @@ export const ModelSelectorPopover: Component<{
 export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
   const dialog = useDialog()
   const local = useLocal()
+  const language = useLanguage()
   const isClaudeCodeMode = createMemo(() => local.mode.current()?.id === "claude-code")
   const isCodexMode = createMemo(() => local.mode.current()?.id === "codex")
   const variants = createMemo(() => local.model.variant.list())
@@ -226,7 +250,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
   if (isCodexMode()) {
     return (
       <Dialog
-        title="Select model"
+        title={language.t("dialog.model.select.title")}
         description="Codex models"
         action={
           <Button
@@ -253,7 +277,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
                 }}
                 onClick={() => local.model.variant.set(undefined)}
               >
-                Default
+                {language.t("common.default")}
               </button>
               <For each={variants()}>
                 {(variant) => (
@@ -279,7 +303,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
 
   if (isClaudeCodeMode()) {
     return (
-      <Dialog title="Select model" description="Claude Code models">
+      <Dialog title={language.t("dialog.model.select.title")} description="Claude Code models">
         <ModelList provider={props.provider} onSelect={() => dialog.close()} />
         <div class="px-3 py-3 border-t border-border-base flex items-center justify-between">
           <div class="flex flex-col">
@@ -303,7 +327,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
           tabIndex={-1}
           onClick={() => dialog.show(() => <DialogSelectProvider />)}
         >
-          Connect provider
+          {language.t("command.provider.connect")}
         </Button>
       }
     >
@@ -313,7 +337,7 @@ export const DialogSelectModel: Component<{ provider?: string }> = (props) => {
         class="ml-3 mt-5 mb-6 text-text-base self-start"
         onClick={() => dialog.show(() => <DialogManageModels />)}
       >
-        Manage models
+        {language.t("dialog.model.manage")}
       </Button>
     </Dialog>
   )

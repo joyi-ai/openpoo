@@ -4,6 +4,7 @@ import { createSimpleContext } from "@opencode-ai/ui/context"
 import { useGlobalSDK } from "./global-sdk"
 import { useGlobalSync } from "./global-sync"
 import { usePlatform } from "@/context/platform"
+import { useLanguage } from "@/context/language"
 import { Binary } from "@opencode-ai/util/binary"
 import { base64Encode } from "@opencode-ai/util/encode"
 import { EventSessionError } from "@opencode-ai/sdk/v2"
@@ -58,6 +59,7 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
     const globalSDK = useGlobalSDK()
     const globalSync = useGlobalSync()
     const platform = usePlatform()
+    const language = useLanguage()
 
     const [store, setStore, _, ready] = persisted(
       Persist.global("notification", ["notification.v1"]),
@@ -103,7 +105,7 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
             session: sessionID,
           })
           const href = `/${base64Encode(directory)}/session/${sessionID}`
-          void platform.notify("Response ready", session?.title ?? sessionID, href)
+          void platform.notify(language.t("notification.session.responseReady.title"), session?.title ?? sessionID, href)
           break
         }
         case "session.error": {
@@ -122,11 +124,13 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
             session: sessionID ?? "global",
             error,
           })
-          const description = session?.title ?? (typeof error === "string" ? error : "An error occurred")
+          const description =
+            session?.title ??
+            (typeof error === "string" ? error : language.t("notification.session.error.fallbackDescription"))
           const href = sessionID
             ? `/${base64Encode(directory)}/session/${sessionID}`
             : `/${base64Encode(directory)}/session`
-          void platform.notify("Session error", description, href)
+          void platform.notify(language.t("notification.session.error.title"), description, href)
           break
         }
       }

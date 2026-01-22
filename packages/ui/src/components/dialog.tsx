@@ -1,24 +1,41 @@
 import { Dialog as Kobalte } from "@kobalte/core/dialog"
 import { ComponentProps, JSXElement, Match, ParentProps, Show, Switch } from "solid-js"
+import { useI18n } from "../context/i18n"
 import { IconButton } from "./icon-button"
 
 export interface DialogProps extends ParentProps {
   title?: JSXElement
   description?: JSXElement
   action?: JSXElement
-  size?: "md" | "lg" | "xl"
+  size?: "md" | "lg" | "xl" | "normal" | "large" | "x-large"
   class?: ComponentProps<"div">["class"]
   classList?: ComponentProps<"div">["classList"]
+  fit?: boolean
 }
 
 export function Dialog(props: DialogProps) {
-  const size = () => props.size ?? "md"
+  const i18n = useI18n()
+  const size = () => {
+    switch (props.size) {
+      case "lg":
+      case "large":
+        return "lg"
+      case "xl":
+      case "x-large":
+        return "xl"
+      case "md":
+      case "normal":
+      default:
+        return "md"
+    }
+  }
 
   return (
-    <div data-component="dialog" data-size={size()}>
+    <div data-component="dialog" data-fit={props.fit ? true : undefined} data-size={size()}>
       <div data-slot="dialog-container">
         <Kobalte.Content
           data-slot="dialog-content"
+          data-no-header={!props.title && !props.action ? "" : undefined}
           classList={{
             ...(props.classList ?? {}),
             [props.class ?? ""]: !!props.class,
@@ -40,7 +57,13 @@ export function Dialog(props: DialogProps) {
               <Switch>
                 <Match when={props.action}>{props.action}</Match>
                 <Match when={true}>
-                  <Kobalte.CloseButton data-slot="dialog-close-button" as={IconButton} icon="close" variant="ghost" />
+                  <Kobalte.CloseButton
+                    data-slot="dialog-close-button"
+                    as={IconButton}
+                    icon="close"
+                    variant="ghost"
+                    aria-label={i18n.t("ui.common.close")}
+                  />
                 </Match>
               </Switch>
             </div>

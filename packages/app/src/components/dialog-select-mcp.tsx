@@ -10,11 +10,13 @@ import { IconButton } from "@opencode-ai/ui/icon-button"
 import { showToast } from "@opencode-ai/ui/toast"
 import type { Config } from "@opencode-ai/sdk/v2/client"
 import { DialogEditMcp, isMcpConfigured, type McpConfigured } from "./dialog-edit-mcp"
+import { useLanguage } from "@/context/language"
 
 export const McpSettingsPanel: Component = () => {
   const sync = useSync()
   const sdk = useSDK()
   const dialog = useDialog()
+  const language = useLanguage()
   const [loading, setLoading] = createSignal<string | null>(null)
 
   type McpEntry = NonNullable<Config["mcp"]>[string]
@@ -102,8 +104,8 @@ export const McpSettingsPanel: Component = () => {
         </Button>
       </div>
       <List
-        search={{ placeholder: "Search", autofocus: true }}
-        emptyMessage="No MCPs configured"
+        search={{ placeholder: language.t("common.search.placeholder"), autofocus: true }}
+        emptyMessage={language.t("dialog.mcp.empty")}
         key={(x) => x?.name ?? ""}
         items={items()}
         filterKeys={["name", "type"]}
@@ -145,8 +147,17 @@ export const McpSettingsPanel: Component = () => {
 }
 
 export const DialogSelectMcp: Component = () => {
+  const sync = useSync()
+  const language = useLanguage()
+  const enabledCount = createMemo(
+    () => Object.values(sync.data.mcp ?? {}).filter((entry) => entry.status === "connected").length,
+  )
+  const totalCount = createMemo(() => Object.values(sync.data.mcp ?? {}).length)
   return (
-    <Dialog title="MCPs" description="Manage MCP servers for this project.">
+    <Dialog
+      title={language.t("dialog.mcp.title")}
+      description={language.t("dialog.mcp.description", { enabled: enabledCount(), total: totalCount() })}
+    >
       <McpSettingsPanel />
     </Dialog>
   )

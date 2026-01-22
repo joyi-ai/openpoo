@@ -29,6 +29,7 @@ import { batch, createContext, useContext, onCleanup, onMount, type ParentProps,
 import { showToast } from "@opencode-ai/ui/toast"
 import { getFilename } from "@opencode-ai/util/path"
 import { normalizeDirectoryKey } from "@/utils/directory"
+import { useLanguage } from "@/context/language"
 
 function resolveDirectoryKey(input: string | undefined) {
   return normalizeDirectoryKey(input)
@@ -140,6 +141,7 @@ type State = {
 function createGlobalSync() {
   const globalSDK = useGlobalSDK()
   const platform = usePlatform()
+  const language = useLanguage()
   const fetchConfig = platform.fetch ? { fetch: platform.fetch } : {}
   const [globalStore, setGlobalStore] = createStore<{
     ready: boolean
@@ -323,7 +325,10 @@ function createGlobalSync() {
       .catch((err) => {
         console.error("Failed to load sessions", err)
         const project = getFilename(resolvedDirectory)
-        showToast({ title: `Failed to load sessions for ${project}`, description: err.message })
+        showToast({
+          title: language.t("toast.session.listFailed.title", { project }),
+          description: err?.message ?? language.t("common.requestFailed"),
+        })
       })
       .finally(() => {
         const current = sessionListInflight.get(key)
@@ -840,7 +845,7 @@ function createGlobalSync() {
     if (!health?.healthy) {
       setGlobalStore(
         "error",
-        new Error(`Could not connect to server. Is there a server running at \`${globalSDK.url}\`?`),
+        new Error(language.t("error.globalSync.connectFailed", { url: globalSDK.url })),
       )
       return
     }

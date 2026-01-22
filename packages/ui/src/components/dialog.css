@@ -138,6 +138,16 @@
   }
 }
 
+[data-component="dialog"][data-fit] {
+  [data-slot="dialog-container"] {
+    height: auto;
+  }
+
+  [data-slot="dialog-content"] {
+    min-height: 0;
+  }
+}
+
 @keyframes overlayShow {
   from {
     opacity: 0;

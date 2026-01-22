@@ -10,6 +10,7 @@ import { useProviders } from "@/hooks/use-providers"
 import { DateTime } from "luxon"
 import { Persist, persisted } from "@/utils/persist"
 import { showToast } from "@opencode-ai/ui/toast"
+import { useLanguage } from "@/context/language"
 import { BUILTIN_MODES, DEFAULT_MODE_ID } from "@/modes/definitions"
 import { deleteCustomMode, saveCustomMode } from "@/modes/custom"
 import type { ModeDefinition, ModeOverride } from "@/modes/types"
@@ -51,6 +52,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     const sdk = useSDK()
     const sync = useSync()
     const providers = useProviders()
+    const language = useLanguage()
 
     const applyModeOverride = (base: ModeDefinition, override?: ModeOverride): ModeDefinition => {
       if (!override) return base
@@ -754,7 +756,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           .catch((e) => {
             showToast({
               variant: "error",
-              title: "Failed to load file",
+              title: language.t("toast.file.loadFailed.title"),
               description: e.message,
             })
           })

@@ -2,6 +2,7 @@ mod cli;
 mod stt;
 #[cfg(windows)]
 mod job_object;
+mod markdown;
 mod window_customizer;
 
 use cli::{install_cli, sync_cli};
@@ -17,6 +18,8 @@ use std::{
     time::{Duration, Instant},
 };
 use tauri::{AppHandle, LogicalSize, Manager, RunEvent, State, WebviewUrl, WebviewWindow};
+#[cfg(windows)]
+use tauri_plugin_decorum::WebviewWindowExt;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogResult};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
@@ -381,17 +384,37 @@ fn spawn_sidecar(app: &AppHandle, port: u32, password: Option<&str>) -> CommandC
     child
 }
 
-async fn check_server_health(url: &str, password: Option<&str>) -> bool {
-    let health_url = format!("{}/global/health", url.trim_end_matches('/'));
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(3))
-        .build();
+fn url_is_localhost(url: &reqwest::Url) -> bool {
+    url.host_str().is_some_and(|host| {
+        host.eq_ignore_ascii_case("localhost")
+            || host
+                .parse::<std::net::IpAddr>()
+                .is_ok_and(|ip| ip.is_loopback())
+    })
+}
 
-    let Ok(client) = client else {
+async fn check_server_health(url: &str, password: Option<&str>) -> bool {
+    let Ok(url) = reqwest::Url::parse(url) else {
         return false;
     };
 
-    let mut req = client.get(&health_url);
+    let mut builder = reqwest::Client::builder().timeout(Duration::from_secs(3));
+
+    if url_is_localhost(&url) {
+        // Some environments set proxy variables (HTTP_PROXY/HTTPS_PROXY/ALL_PROXY) without
+        // excluding loopback. reqwest respects these by default, which can prevent the desktop
+        // app from reaching its own local sidecar server.
+        builder = builder.no_proxy();
+    };
+
+    let Ok(client) = builder.build() else {
+        return false;
+    };
+    let Ok(health_url) = url.join("/global/health") else {
+        return false;
+    };
+
+    let mut req = client.get(health_url);
 
     if let Some(password) = password {
         req = req.basic_auth("opencode", Some(password));
@@ -403,17 +426,35 @@ async fn check_server_health(url: &str, password: Option<&str>) -> bool {
         .unwrap_or(false)
 }
 
+/// Converts a bind address hostname to a valid URL hostname for connection.
+/// - `0.0.0.0` and `::` are wildcard bind addresses, not valid connect targets
+/// - IPv6 addresses need brackets in URLs (e.g., `::1` -> `[::1]`)
+fn normalize_hostname_for_url(hostname: &str) -> String {
+    if hostname == "0.0.0.0" {
+        return "127.0.0.1".to_string();
+    }
+    if hostname == "::" {
+        return "[::1]".to_string();
+    }
+
+    if hostname.contains(':') && !hostname.starts_with('[') {
+        return format!("[{}]", hostname);
+    }
+
+    hostname.to_string()
+}
+
 fn get_server_url_from_config(config: &cli::Config) -> Option<String> {
     let server = config.server.as_ref()?;
     let port = server.port?;
     println!("server.port found in OC config: {port}");
-    let hostname = server.hostname.as_ref();
+    let hostname = server
+        .hostname
+        .as_ref()
+        .map(|v| normalize_hostname_for_url(v))
+        .unwrap_or_else(|| "127.0.0.1".to_string());
 
-    Some(format!(
-        "http://{}:{}",
-        hostname.map(|v| v.as_str()).unwrap_or("127.0.0.1"),
-        port
-    ))
+    Some(format!("http://{}:{}", hostname, port))
 }
 
 async fn setup_server_connection(
@@ -550,6 +591,7 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(PinchZoomDisablePlugin)
+        .plugin(tauri_plugin_decorum::init())
         .invoke_handler(tauri::generate_handler![
             kill_sidecar,
             copy_logs_to_clipboard,
@@ -563,7 +605,8 @@ pub fn run() {
             stt_download_model,
             stt_start_recording,
             stt_push_audio,
-            stt_stop_and_transcribe
+            stt_stop_and_transcribe,
+            markdown::parse_markdown_command
         ])
         .setup(move |app| {
             let app = app.handle().clone();
@@ -625,7 +668,13 @@ pub fn run() {
                     .hidden_title(true);
             }
 
+            #[cfg(windows)]
+            let window_builder = window_builder.decorations(false);
+
             let window = window_builder.build().expect("Failed to create window");
+
+            #[cfg(windows)]
+            let _ = window.create_overlay_titlebar();
 
             let (tx, rx) = oneshot::channel();
             app.manage(ServerState::new(None, rx));

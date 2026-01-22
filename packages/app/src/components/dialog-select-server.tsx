@@ -10,6 +10,7 @@ import { normalizeServerUrl, serverDisplayName, useServer } from "@/context/serv
 import { usePlatform } from "@/context/platform"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { useNavigate } from "@solidjs/router"
+import { useLanguage } from "@/context/language"
 
 type ServerStatus = { healthy: boolean; version?: string }
 
@@ -34,6 +35,7 @@ export function DialogSelectServer() {
     setDefaultServerUrl?: (url: string | null) => Promise<void>
   }
   const platform = usePlatform() as PlatformDefaults
+  const language = useLanguage()
   const [store, setStore] = createStore({
     url: "",
     adding: false,
@@ -113,7 +115,7 @@ export function DialogSelectServer() {
     setStore("adding", false)
 
     if (!result.healthy) {
-      setStore("error", "Could not connect to server")
+      setStore("error", language.t("dialog.server.add.error"))
       return
     }
 
@@ -126,11 +128,11 @@ export function DialogSelectServer() {
   }
 
   return (
-    <Dialog title="Servers" description="Switch which OpenCode server this app connects to.">
+    <Dialog title={language.t("dialog.server.title")} description={language.t("dialog.server.description")}>
       <div class="flex flex-col gap-4 pb-4">
         <List
-          search={{ placeholder: "Search servers", autofocus: true }}
-          emptyMessage="No servers yet"
+          search={{ placeholder: language.t("dialog.server.search.placeholder"), autofocus: true }}
+          emptyMessage={language.t("dialog.server.empty")}
           items={sortedItems}
           key={(x) => x}
           current={current()}
@@ -160,6 +162,7 @@ export function DialogSelectServer() {
                   icon="circle-x"
                   variant="ghost"
                   class="bg-transparent transition-opacity shrink-0 hover:scale-110"
+                  aria-label={language.t("dialog.server.action.remove")}
                   onClick={(e) => {
                     e.stopPropagation()
                     handleRemove(i)
@@ -172,16 +175,16 @@ export function DialogSelectServer() {
 
         <div class="mt-6 px-3 flex flex-col gap-1.5">
           <div class="px-3">
-            <h3 class="text-14-regular text-text-weak">Add a server</h3>
+            <h3 class="text-14-regular text-text-weak">{language.t("dialog.server.add.title")}</h3>
           </div>
           <form onSubmit={handleSubmit}>
             <div class="flex items-start gap-2">
               <div class="flex-1 min-w-0 h-auto">
                 <TextField
                   type="text"
-                  label="Server URL"
+                  label={language.t("dialog.server.add.url")}
                   hideLabel
-                  placeholder="http://localhost:4096"
+                  placeholder={language.t("dialog.server.add.placeholder")}
                   value={store.url}
                   onChange={(v) => {
                     setStore("url", v)
@@ -192,7 +195,7 @@ export function DialogSelectServer() {
                 />
               </div>
               <Button type="submit" variant="secondary" icon="plus-small" size="large" disabled={store.adding}>
-                {store.adding ? "Checking..." : "Add"}
+                {store.adding ? language.t("dialog.server.add.checking") : language.t("dialog.server.add.button")}
               </Button>
             </div>
           </form>
@@ -201,10 +204,8 @@ export function DialogSelectServer() {
         <Show when={isDesktop}>
           <div class="mt-6 px-3 flex flex-col gap-1.5">
             <div class="px-3">
-              <h3 class="text-14-regular text-text-weak">Default server</h3>
-              <p class="text-12-regular text-text-weak mt-1">
-                Connect to this server on app launch instead of starting a local server. Requires restart.
-              </p>
+              <h3 class="text-14-regular text-text-weak">{language.t("dialog.server.default.title")}</h3>
+              <p class="text-12-regular text-text-weak mt-1">{language.t("dialog.server.default.description")}</p>
             </div>
             <div class="flex items-center gap-2 px-3 py-2">
               <Show
@@ -212,7 +213,9 @@ export function DialogSelectServer() {
                 fallback={
                   <Show
                     when={server.url}
-                    fallback={<span class="text-14-regular text-text-weak">No server selected</span>}
+                    fallback={
+                      <span class="text-14-regular text-text-weak">{language.t("dialog.server.default.none")}</span>
+                    }
                   >
                     <Button
                       variant="secondary"
@@ -222,7 +225,7 @@ export function DialogSelectServer() {
                         defaultUrlActions.refetch(server.url)
                       }}
                     >
-                      Set current server as default
+                      {language.t("dialog.server.default.set")}
                     </Button>
                   </Show>
                 }
@@ -238,7 +241,7 @@ export function DialogSelectServer() {
                     defaultUrlActions.refetch()
                   }}
                 >
-                  Clear
+                  {language.t("dialog.server.default.clear")}
                 </Button>
               </Show>
             </div>

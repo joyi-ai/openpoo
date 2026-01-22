@@ -28,6 +28,7 @@ import { VoiceRecordingWidget } from "@/components/voice-recording-widget"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { normalizeDirectoryKey } from "@/utils/directory"
 import type { Session } from "@opencode-ai/sdk/v2/client"
+import { useLanguage } from "@/context/language"
 
 export default function Layout(props: ParentProps) {
   const [store, setStore] = createStore({
@@ -49,13 +50,15 @@ export default function Layout(props: ParentProps) {
   const dialog = useDialog()
   const command = useCommand()
   const theme = useTheme()
+  const language = useLanguage()
   const availableThemeEntries = createMemo(() => Object.entries(theme.themes()))
   const colorSchemeOrder: ColorScheme[] = ["system", "light", "dark"]
-  const colorSchemeLabel: Record<ColorScheme, string> = {
-    system: "System",
-    light: "Light",
-    dark: "Dark",
+  const colorSchemeKey: Record<ColorScheme, "theme.scheme.system" | "theme.scheme.light" | "theme.scheme.dark"> = {
+    system: "theme.scheme.system",
+    light: "theme.scheme.light",
+    dark: "theme.scheme.dark",
   }
+  const colorSchemeLabel = (scheme: ColorScheme) => language.t(colorSchemeKey[scheme])
   const mcpDirectory = createMemo(() => {
     if (params.dir) return base64Decode(params.dir)
     const searchDir = searchParams.dir
@@ -74,7 +77,7 @@ export default function Layout(props: ParentProps) {
     theme.setTheme(nextThemeId)
     const nextTheme = theme.themes()[nextThemeId]
     showToast({
-      title: "Theme switched",
+      title: language.t("toast.theme.title"),
       description: nextTheme?.name ?? nextThemeId,
     })
   }
@@ -87,8 +90,8 @@ export default function Layout(props: ParentProps) {
     const next = colorSchemeOrder[nextIndex]
     theme.setColorScheme(next)
     showToast({
-      title: "Color scheme",
-      description: colorSchemeLabel[next],
+      title: language.t("toast.scheme.title"),
+      description: colorSchemeLabel(next),
     })
   }
 
@@ -103,18 +106,18 @@ export default function Layout(props: ParentProps) {
         toastId = showToast({
           persistent: true,
           icon: "download",
-          title: "Update available",
-          description: `A new version of OpenCode (${version}) is now available to install.`,
+          title: language.t("toast.update.title"),
+          description: language.t("toast.update.description", { version: version ?? "" }),
           actions: [
             {
-              label: "Install and restart",
+              label: language.t("toast.update.action.installRestart"),
               onClick: async () => {
                 await platform.update!()
                 await platform.restart!()
               },
             },
             {
-              label: "Not yet",
+              label: language.t("toast.update.action.notYet"),
               onClick: "dismiss",
             },
           ],
@@ -142,9 +145,9 @@ export default function Layout(props: ParentProps) {
       const [store] = globalSync.child(directory)
       const session = store.session.find((s) => s.id === perm.sessionID)
 
-      const sessionTitle = session?.title ?? "New session"
+      const sessionTitle = session?.title ?? language.t("command.session.new")
       const projectName = getFilename(directory)
-      const description = `${sessionTitle} in ${projectName} needs permission`
+      const description = language.t("notification.permission.description", { sessionTitle, projectName })
       const href = `/${base64Encode(directory)}/session/${perm.sessionID}`
 
       const now = Date.now()
@@ -152,7 +155,7 @@ export default function Layout(props: ParentProps) {
       if (now - lastAlerted < permissionAlertCooldownMs) return
       alertedAtBySession.set(sessionKey, now)
 
-      void platform.notify("Permission required", description, href)
+      void platform.notify(language.t("notification.permission.title"), description, href)
 
       const currentDir = params.dir ? base64Decode(params.dir) : undefined
       const currentSession = params.id
@@ -167,17 +170,17 @@ export default function Layout(props: ParentProps) {
       const toastId = showToast({
         persistent: true,
         icon: "checklist",
-        title: "Permission required",
+        title: language.t("notification.permission.title"),
         description,
         actions: [
           {
-            label: "Go to session",
+            label: language.t("notification.action.goToSession"),
             onClick: () => {
               navigate(href)
             },
           },
           {
-            label: "Dismiss",
+            label: language.t("common.dismiss"),
             onClick: "dismiss",
           },
         ],
@@ -358,41 +361,41 @@ export default function Layout(props: ParentProps) {
     const commands: CommandOption[] = [
       {
         id: "project.open",
-        title: "Open project",
-        category: "Project",
+        title: language.t("command.project.open"),
+        category: language.t("command.category.project"),
         keybind: "mod+o",
         onSelect: () => chooseProject(),
       },
       {
         id: "provider.connect",
-        title: "Connect provider",
-        category: "Provider",
+        title: language.t("command.provider.connect"),
+        category: language.t("command.category.provider"),
         onSelect: () => connectProvider(),
       },
       {
         id: "server.switch",
-        title: "Switch server",
-        category: "Server",
+        title: language.t("command.server.switch"),
+        category: language.t("command.category.server"),
         onSelect: () => openServer(),
       },
       {
         id: "session.previous",
-        title: "Previous session",
-        category: "Session",
+        title: language.t("command.session.previous"),
+        category: language.t("command.category.session"),
         keybind: "alt+arrowup",
         onSelect: () => navigateSessionByOffset(-1),
       },
       {
         id: "session.next",
-        title: "Next session",
-        category: "Session",
+        title: language.t("command.session.next"),
+        category: language.t("command.category.session"),
         keybind: "alt+arrowdown",
         onSelect: () => navigateSessionByOffset(1),
       },
       {
         id: "session.archive",
-        title: "Archive session",
-        category: "Session",
+        title: language.t("command.session.archive"),
+        category: language.t("command.category.session"),
         keybind: "mod+shift+backspace",
         disabled: !params.dir || !params.id,
         onSelect: () => {
@@ -402,8 +405,8 @@ export default function Layout(props: ParentProps) {
       },
       {
         id: "theme.cycle",
-        title: "Cycle theme",
-        category: "Theme",
+        title: language.t("command.theme.cycle"),
+        category: language.t("command.category.theme"),
         keybind: "mod+shift+t",
         onSelect: () => cycleTheme(1),
       },
@@ -412,8 +415,8 @@ export default function Layout(props: ParentProps) {
     for (const [id, definition] of availableThemeEntries()) {
       commands.push({
         id: `theme.set.${id}`,
-        title: `Use theme: ${definition.name ?? id}`,
-        category: "Theme",
+        title: language.t("command.theme.set", { theme: definition.name ?? id }),
+        category: language.t("command.category.theme"),
         onSelect: () => theme.commitPreview(),
         onHighlight: () => {
           theme.previewTheme(id)
@@ -424,8 +427,8 @@ export default function Layout(props: ParentProps) {
 
     commands.push({
       id: "theme.scheme.cycle",
-      title: "Cycle color scheme",
-      category: "Theme",
+      title: language.t("command.theme.scheme.cycle"),
+      category: language.t("command.category.theme"),
       keybind: "mod+shift+s",
       onSelect: () => cycleColorScheme(1),
     })
@@ -433,8 +436,8 @@ export default function Layout(props: ParentProps) {
     for (const scheme of colorSchemeOrder) {
       commands.push({
         id: `theme.scheme.${scheme}`,
-        title: `Use color scheme: ${colorSchemeLabel[scheme]}`,
-        category: "Theme",
+        title: language.t("command.theme.scheme.set", { scheme: colorSchemeLabel(scheme) }),
+        category: language.t("command.category.theme"),
         onSelect: () => theme.commitPreview(),
         onHighlight: () => {
           theme.previewColorScheme(scheme)
@@ -548,7 +551,7 @@ export default function Layout(props: ParentProps) {
 
     if (platform.openDirectoryPickerDialog && server.isLocal()) {
       const result = await platform.openDirectoryPickerDialog?.({
-        title: "Open project",
+        title: language.t("command.project.open"),
         multiple: true,
       })
       resolve(result)

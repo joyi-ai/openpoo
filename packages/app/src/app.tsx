@@ -6,6 +6,7 @@ import { Font } from "@opencode-ai/ui/font"
 import { MarkedProvider } from "@opencode-ai/ui/context/marked"
 import { DiffComponentProvider } from "@opencode-ai/ui/context/diff"
 import { CodeComponentProvider } from "@opencode-ai/ui/context/code"
+import { I18nProvider } from "@opencode-ai/ui/context"
 import { Diff } from "@opencode-ai/ui/diff"
 import { Code } from "@opencode-ai/ui/code"
 import { ThemeProvider } from "@opencode-ai/ui/theme"
@@ -14,9 +15,15 @@ import { PermissionProvider } from "@/context/permission"
 import { LayoutProvider } from "@/context/layout"
 import { GlobalSDKProvider } from "@/context/global-sdk"
 import { ServerProvider, useServer } from "@/context/server"
+import { SettingsProvider } from "@/context/settings"
+import { TerminalProvider } from "@/context/terminal"
+import { PromptProvider } from "@/context/prompt"
+import { FileProvider } from "@/context/file"
 import { NotificationProvider } from "@/context/notification"
 import { DialogProvider } from "@opencode-ai/ui/context/dialog"
 import { CommandProvider } from "@/context/command"
+import { LanguageProvider, useLanguage } from "@/context/language"
+import { usePlatform } from "@/context/platform"
 import { VoiceProvider } from "@/context/voice"
 import { FloatingSelectorProvider } from "@/context/floating-selector"
 import { MultiPaneProvider } from "@/context/multi-pane"
@@ -32,6 +39,11 @@ const Session = lazy(() => import("@/pages/session"))
 const Loading = () => <div class="size-full" />
 
 export { PlatformProvider, type Platform } from "@/context/platform"
+
+function UiI18nBridge(props: ParentProps) {
+  const language = useLanguage()
+  return <I18nProvider value={{ locale: language.locale, t: language.t }}>{props.children}</I18nProvider>
+}
 
 declare global {
   interface Window {
@@ -65,20 +77,29 @@ const defaultServerUrl = iife(() => {
   return window.location.origin
 })
 
+function MarkedProviderWithNativeParser(props: ParentProps) {
+  const platform = usePlatform()
+  return <MarkedProvider nativeParser={platform.parseMarkdown}>{props.children}</MarkedProvider>
+}
+
 export function AppBaseProviders(props: ParentProps) {
   return (
     <MetaProvider>
       <Font />
       <ThemeProvider>
-        <ErrorBoundary fallback={(error) => <ErrorPage error={error} />}>
-          <DialogProvider>
-            <MarkedProvider>
-              <DiffComponentProvider component={Diff}>
-                <CodeComponentProvider component={Code}>{props.children}</CodeComponentProvider>
-              </DiffComponentProvider>
-            </MarkedProvider>
-          </DialogProvider>
-        </ErrorBoundary>
+        <LanguageProvider>
+          <UiI18nBridge>
+            <ErrorBoundary fallback={(error) => <ErrorPage error={error} />}>
+              <DialogProvider>
+                <MarkedProviderWithNativeParser>
+                  <DiffComponentProvider component={Diff}>
+                    <CodeComponentProvider component={Code}>{props.children}</CodeComponentProvider>
+                  </DiffComponentProvider>
+                </MarkedProviderWithNativeParser>
+              </DialogProvider>
+            </ErrorBoundary>
+          </UiI18nBridge>
+        </LanguageProvider>
       </ThemeProvider>
     </MetaProvider>
   )
@@ -103,22 +124,24 @@ export function AppInterface(props: { defaultUrl?: string } = {}) {
             <MultiPaneProvider>
               <Router
                 root={(props) => (
-                  <PermissionProvider>
-                    <LayoutProvider>
-                      <NotificationProvider>
-                        <CommandProvider>
-                          <VoiceProvider>
-                            <FloatingSelectorProvider>
-                              <OnboardingProvider>
-                                <Layout>{props.children}</Layout>
-                                <Onboarding />
-                              </OnboardingProvider>
-                            </FloatingSelectorProvider>
-                          </VoiceProvider>
-                        </CommandProvider>
-                      </NotificationProvider>
-                    </LayoutProvider>
-                  </PermissionProvider>
+                  <SettingsProvider>
+                    <PermissionProvider>
+                      <LayoutProvider>
+                        <NotificationProvider>
+                          <CommandProvider>
+                            <VoiceProvider>
+                              <FloatingSelectorProvider>
+                                <OnboardingProvider>
+                                  <Layout>{props.children}</Layout>
+                                  <Onboarding />
+                                </OnboardingProvider>
+                              </FloatingSelectorProvider>
+                            </VoiceProvider>
+                          </CommandProvider>
+                        </NotificationProvider>
+                      </LayoutProvider>
+                    </PermissionProvider>
+                  </SettingsProvider>
                 )}
               >
                 <Route
@@ -131,7 +154,22 @@ export function AppInterface(props: { defaultUrl?: string } = {}) {
                 />
                 <Route path="/:dir" component={DirectoryLayout}>
                   <Route path="/" component={() => <Navigate href="session" />} />
-                  <Route path="/session/:id?" component={Session} />
+                  <Route
+                    path="/session/:id?"
+                    component={(route) => (
+                      <Show when={route.params.id ?? "new"} keyed>
+                        <TerminalProvider>
+                          <FileProvider>
+                            <PromptProvider>
+                              <Suspense fallback={<Loading />}>
+                                <Session />
+                              </Suspense>
+                            </PromptProvider>
+                          </FileProvider>
+                        </TerminalProvider>
+                      </Show>
+                    )}
+                  />
                 </Route>
               </Router>
             </MultiPaneProvider>

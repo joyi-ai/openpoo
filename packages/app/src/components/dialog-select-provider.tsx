@@ -8,22 +8,30 @@ import { Tag } from "@opencode-ai/ui/tag"
 import { ProviderIcon } from "@opencode-ai/ui/provider-icon"
 import { IconName } from "@opencode-ai/ui/icons/provider"
 import { DialogConnectProvider } from "./dialog-connect-provider"
+import { useLanguage } from "@/context/language"
 
 export const DialogSelectProvider: Component = () => {
   const dialog = useDialog()
   const providers = useProviders()
-  const providerItems = createMemo(() => providers.all().filter((provider) => provider.id !== "claude-agent"))
+  const language = useLanguage()
+  const providerItems = createMemo(() => {
+    language.locale()
+    return providers.all().filter((provider) => provider.id !== "claude-agent")
+  })
   const connectedSet = createMemo(() => new Set(providers.connected().map((p) => p.id)))
+  const popularGroup = () => language.t("dialog.provider.group.popular")
+  const otherGroup = () => language.t("dialog.provider.group.other")
 
   return (
-    <Dialog title="Connect provider">
+    <Dialog title={language.t("command.provider.connect")}>
       <List
-        search={{ placeholder: "Search providers", autofocus: true }}
+        search={{ placeholder: language.t("dialog.provider.search.placeholder"), autofocus: true }}
+        emptyMessage={language.t("dialog.provider.empty")}
         activeIcon="plus-small"
         key={(x) => x?.id}
         items={providerItems}
         filterKeys={["id", "name"]}
-        groupBy={(x) => (popularProviders.includes(x.id) ? "Popular" : "Other")}
+        groupBy={(x) => (popularProviders.includes(x.id) ? popularGroup() : otherGroup())}
         sortBy={(a, b) => {
           const aConnected = connectedSet().has(a.id)
           const bConnected = connectedSet().has(b.id)
@@ -34,8 +42,9 @@ export const DialogSelectProvider: Component = () => {
           return a.name.localeCompare(b.name)
         }}
         sortGroupsBy={(a, b) => {
-          if (a.category === "Popular" && b.category !== "Popular") return -1
-          if (b.category === "Popular" && a.category !== "Popular") return 1
+          const popular = popularGroup()
+          if (a.category === popular && b.category !== popular) return -1
+          if (b.category === popular && a.category !== popular) return 1
           return 0
         }}
         onSelect={(x) => {
@@ -50,11 +59,11 @@ export const DialogSelectProvider: Component = () => {
             <Show when={connectedSet().has(i.id)}>
               <Icon name="circle-check" class="size-4 text-icon-success-base" />
             </Show>
-            <Show when={i.id === "claude-agent"}>
-              <Tag>Recommended</Tag>
+            <Show when={i.id === "opencode"}>
+              <Tag>{language.t("dialog.provider.tag.recommended")}</Tag>
             </Show>
             <Show when={i.id === "anthropic"}>
-              <div class="text-14-regular text-text-weak">Connect with Claude Pro/Max or API key</div>
+              <div class="text-14-regular text-text-weak">{language.t("dialog.provider.anthropic.note")}</div>
             </Show>
           </div>
         )}
