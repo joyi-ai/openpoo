@@ -571,7 +571,7 @@ export type QuestionInfo = {
    */
   question: string
   /**
-   * Very short label (max 12 chars)
+   * Very short label (max 30 chars)
    */
   header: string
   /**
@@ -1758,6 +1758,10 @@ export type Config = {
    * Disable OpenCode plugins by name or specifier
    */
   disabled_plugins?: Array<string>
+  /**
+   * Disable skills by name
+   */
+  disabled_skills?: Array<string>
   snapshot?: boolean
   /**
    * Git worktree configuration for session isolation

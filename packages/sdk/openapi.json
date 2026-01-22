@@ -241,7 +241,7 @@
           }
         ],
         "summary": "Update project",
-        "description": "Update project properties such as name, icon and color.",
+        "description": "Update project properties such as name, icon, and commands.",
         "responses": {
           "200": {
             "description": "Updated project information",
@@ -4344,6 +4344,87 @@
           {
             "lang": "js",
             "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.session.cleanup({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/session/{sessionID}/deleteMessages": {
+      "post": {
+        "operationId": "session.deleteMessages",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses.*"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Delete messages",
+        "description": "Delete messages starting from a specific message without reverting file changes.",
+        "responses": {
+          "200": {
+            "description": "Updated session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messageID": {
+                    "type": "string",
+                    "pattern": "^msg.*"
+                  }
+                },
+                "required": [
+                  "messageID"
+                ]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.session.deleteMessages({\n  ...\n})"
           }
         ]
       }
@@ -9241,7 +9322,8 @@
         "properties": {
           "label": {
             "description": "Display text (1-5 words, concise)",
-            "type": "string"
+            "type": "string",
+            "maxLength": 30
           },
           "description": {
             "description": "Explanation of choice",
@@ -9261,9 +9343,9 @@
             "type": "string"
           },
           "header": {
-            "description": "Very short label (max 12 chars)",
+            "description": "Very short label (max 30 chars)",
             "type": "string",
-            "maxLength": 12
+            "maxLength": 30
           },
           "options": {
             "description": "Available choices",
@@ -10891,12 +10973,22 @@
           },
           "messages_page_up": {
             "description": "Scroll messages up by one page",
-            "default": "pageup",
+            "default": "pageup,ctrl+alt+b",
             "type": "string"
           },
           "messages_page_down": {
             "description": "Scroll messages down by one page",
-            "default": "pagedown",
+            "default": "pagedown,ctrl+alt+f",
+            "type": "string"
+          },
+          "messages_line_up": {
+            "description": "Scroll messages up by one line",
+            "default": "ctrl+alt+y",
+            "type": "string"
+          },
+          "messages_line_down": {
+            "description": "Scroll messages down by one line",
+            "default": "ctrl+alt+e",
             "type": "string"
           },
           "messages_half_page_up": {
@@ -11978,6 +12070,13 @@
           },
           "disabled_plugins": {
             "description": "Disable OpenCode plugins by name or specifier",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "disabled_skills": {
+            "description": "Disable skills by name",
             "type": "array",
             "items": {
               "type": "string"

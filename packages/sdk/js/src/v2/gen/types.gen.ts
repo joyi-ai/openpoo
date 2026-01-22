@@ -571,7 +571,7 @@ export type QuestionInfo = {
    */
   question: string
   /**
-   * Very short label (max 12 chars)
+   * Very short label (max 30 chars)
    */
   header: string
   /**
@@ -1115,6 +1115,14 @@ export type KeybindsConfig = {
    * Scroll messages down by one page
    */
   messages_page_down?: string
+  /**
+   * Scroll messages up by one line
+   */
+  messages_line_up?: string
+  /**
+   * Scroll messages down by one line
+   */
+  messages_line_down?: string
   /**
    * Scroll messages up by half page
    */
@@ -1750,6 +1758,10 @@ export type Config = {
    * Disable OpenCode plugins by name or specifier
    */
   disabled_plugins?: Array<string>
+  /**
+   * Disable skills by name
+   */
+  disabled_skills?: Array<string>
   snapshot?: boolean
   /**
    * Git worktree configuration for session isolation
