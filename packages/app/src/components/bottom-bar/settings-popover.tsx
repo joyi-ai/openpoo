@@ -1,19 +1,19 @@
-import { type ParentProps, createMemo, createSignal, Match, onMount, Show, Switch } from "solid-js"
+import { type ParentProps, createMemo, Match, onMount, Show, Switch } from "solid-js"
 import { Popover as Kobalte } from "@kobalte/core/popover"
 import { Button } from "@opencode-ai/ui/button"
 import { Icon } from "@opencode-ai/ui/icon"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { ProgressCircle } from "@opencode-ai/ui/progress-circle"
 import { Select } from "@opencode-ai/ui/select"
-import { useVoice, type RecordingMode } from "@/context/voice"
+import { useVoice } from "@/context/voice"
 import { formatKeybind } from "@/context/command"
 import { useKeybindCapture } from "@/hooks/use-keybind-capture"
 
 function VoiceSettingsContent() {
   const voice = useVoice()
-  const { isCapturing, setIsCapturing, capturedKeybind, handleKeyDown } = useKeybindCapture(voice.settings.keybind())
-  const [selectedMode, setSelectedMode] = createSignal<RecordingMode>(voice.settings.mode())
-  const [selectedDevice, setSelectedDevice] = createSignal<string>(voice.settings.deviceId() ?? "default")
+  const { isCapturing, setIsCapturing, capturedKeybind, handleKeyDown } = useKeybindCapture(voice.settings.keybind(), {
+    onCapture: (keybind) => voice.settings.setKeybind(keybind),
+  })
 
   const deviceOptions = createMemo(() => {
     const devices = voice.state.availableDevices()
@@ -25,7 +25,7 @@ function VoiceSettingsContent() {
 
   const currentDevice = createMemo(() => {
     const options = deviceOptions()
-    const currentId = selectedDevice()
+    const currentId = voice.settings.deviceId() ?? "default"
     const match = options.find((option) => option.id === currentId)
     if (match) return match
     return options[0]
@@ -33,15 +33,8 @@ function VoiceSettingsContent() {
 
   onMount(() => {
     voice.actions.refreshDevices()
-  })
-
-  const handleSave = () => {
-    voice.settings.setKeybind(capturedKeybind())
-    voice.settings.setMode(selectedMode())
-    const deviceId = selectedDevice()
-    voice.settings.setDeviceId(deviceId === "default" ? null : deviceId)
     voice.settings.markConfigured()
-  }
+  })
 
   const handleDownload = () => {
     voice.actions.downloadModel()
@@ -94,8 +87,8 @@ function VoiceSettingsContent() {
           value={(option) => option.id}
           label={(option) => option.label}
           onSelect={(option) => {
-            const next = option?.id ?? "default"
-            setSelectedDevice(next)
+            const id = option?.id ?? "default"
+            voice.settings.setDeviceId(id === "default" ? null : id)
           }}
           variant="ghost"
           class="flex-1 justify-between text-12-regular"
@@ -109,56 +102,43 @@ function VoiceSettingsContent() {
         />
       </div>
 
-      {/* Hotkey */}
-      <button
-        type="button"
-        class="w-full px-3 py-2 rounded-md bg-surface-raised-base text-12-regular text-text-base text-left focus:outline-none focus:ring-1 focus:ring-border-focus-base"
-        classList={{ "ring-1 ring-border-focus-base": isCapturing() }}
-        onClick={() => setIsCapturing(true)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => setIsCapturing(false)}
-      >
-        <Show when={!isCapturing()} fallback={<span class="text-text-subtle">Press hotkey...</span>}>
-          <span class="font-mono">{formatKeybind(capturedKeybind())}</span>
-        </Show>
-      </button>
-
-      {/* Recording Mode */}
+      {/* Hotkey & Recording Mode */}
       <div class="flex gap-2">
         <button
           type="button"
-          class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-12-medium transition-colors"
+          class="flex-1 px-3 py-2 rounded-md bg-surface-raised-base text-12-regular text-text-base text-left focus:outline-none focus:ring-1 focus:ring-border-focus-base"
+          classList={{ "ring-1 ring-border-focus-base": isCapturing() }}
+          onClick={() => setIsCapturing(true)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => setIsCapturing(false)}
+        >
+          <Show when={!isCapturing()} fallback={<span class="text-text-subtle">Press hotkey...</span>}>
+            <span class="font-mono">{formatKeybind(capturedKeybind())}</span>
+          </Show>
+        </button>
+        <button
+          type="button"
+          class="px-3 py-2 rounded-md text-12-medium transition-colors"
           classList={{
-            "bg-surface-info-base/20 text-text-info-base ring-1 ring-border-info-base": selectedMode() === "toggle",
-            "bg-surface-raised-base text-text-base hover:bg-surface-raised-hover": selectedMode() !== "toggle",
+            "bg-surface-info-base/20 text-text-info-base ring-1 ring-border-info-base": voice.settings.mode() === "toggle",
+            "bg-surface-raised-base text-text-base hover:bg-surface-raised-hover": voice.settings.mode() !== "toggle",
           }}
-          onClick={() => setSelectedMode("toggle")}
+          onClick={() => voice.settings.setMode("toggle")}
         >
           Toggle
         </button>
         <button
           type="button"
-          class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-12-medium transition-colors"
+          class="px-3 py-2 rounded-md text-12-medium transition-colors"
           classList={{
-            "bg-surface-info-base/20 text-text-info-base ring-1 ring-border-info-base": selectedMode() === "push-to-talk",
-            "bg-surface-raised-base text-text-base hover:bg-surface-raised-hover": selectedMode() !== "push-to-talk",
+            "bg-surface-info-base/20 text-text-info-base ring-1 ring-border-info-base": voice.settings.mode() === "push-to-talk",
+            "bg-surface-raised-base text-text-base hover:bg-surface-raised-hover": voice.settings.mode() !== "push-to-talk",
           }}
-          onClick={() => setSelectedMode("push-to-talk")}
+          onClick={() => voice.settings.setMode("push-to-talk")}
         >
           Hold
         </button>
       </div>
-
-      {/* Save */}
-      <Button
-        variant="primary"
-        size="small"
-        class="w-full"
-        onClick={handleSave}
-        disabled={voice.state.modelStatus() !== "ready"}
-      >
-        Save
-      </Button>
     </div>
   )
 }

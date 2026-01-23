@@ -6,7 +6,7 @@
   "version": "../package.json",
   "build": {
     "beforeDevCommand": "bun run dev",
-    "devUrl": "http://127.0.0.1:5173",
+    "devUrl": "http://127.0.0.1:5373",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
